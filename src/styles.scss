@@ -1,1 +1,30 @@
-/* You can add global styles to this file, and also import other style files */
+@import "primeicons/primeicons.css";
+@import "primeflex/primeflex.css";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--surface-ground);
+  color: var(--text-color);
+  font-family: "Aptos", "Segoe UI", sans-serif;
+  margin: 0;
+}
+
+a,
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.p-component {
+  font-family: inherit;
+}

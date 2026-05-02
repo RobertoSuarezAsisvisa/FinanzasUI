@@ -1,0 +1,484 @@
+<div class="dashboard-view">
+  <app-page-header
+    class="dashboard-header"
+    title="Dashboard"
+    subtitle="Indicadores, flujo de caja y compromisos financieros."
+    icon="pi pi-chart-line"
+  >
+    <button pButton type="button" icon="pi pi-refresh" label="Actualizar" severity="secondary" (click)="load()"></button>
+  </app-page-header>
+
+  <ng-container *ngIf="ready(); else loadingState">
+    <section class="command-strip">
+      <div class="flow-status">
+        <span class="status-dot" [class.good]="flowSeverity() === 'success'" [class.bad]="flowSeverity() === 'danger'"></span>
+        <div>
+          <span class="eyebrow">Flujo actual</span>
+          <strong>{{ flowHeadline() }}</strong>
+          <p>{{ flowSubtext() }}</p>
+        </div>
+      </div>
+
+      <dl class="system-metrics">
+        <div>
+          <dt>Periodo</dt>
+          <dd>{{ currentPeriodName() }}</dd>
+        </div>
+        <div>
+          <dt>Actualizado</dt>
+          <dd>{{ lastRefreshed() ? (lastRefreshed() | date: 'short') : 'Ahora' }}</dd>
+        </div>
+        <div>
+          <dt>API</dt>
+          <dd><p-tag [severity]="healthSeverity()" [value]="healthLabel()"></p-tag></dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="metrics-grid">
+      <article
+        *ngFor="let card of overviewCards()"
+        [ngClass]="['metric-card', 'tone-' + card.tone]"
+        [pTooltip]="card.tooltip"
+        tooltipPosition="top"
+      >
+        <div class="metric-icon"><i [class]="card.icon"></i></div>
+        <span>{{ card.label }}</span>
+        <strong>{{ card.money ? cardCurrency(card.value) : card.value }}</strong>
+      </article>
+    </section>
+
+    <section class="bi-section">
+      <div class="section-head bi-head">
+        <div>
+          <p class="eyebrow">Inteligencia financiera</p>
+          <h3>Lectura ejecutiva de tus datos</h3>
+          <p class="flow-summary">Cruce de transacciones, cuentas, presupuestos, metas y deudas registradas.</p>
+        </div>
+      </div>
+
+      <div class="bi-metrics">
+        <article
+          *ngFor="let item of biMetrics()"
+          [ngClass]="['bi-metric', 'tone-' + item.tone]"
+          [pTooltip]="item.tooltip"
+          tooltipPosition="top"
+        >
+          <span>{{ item.label }}</span>
+          <strong>{{ item.value }}</strong>
+          <small>{{ item.detail }}</small>
+        </article>
+      </div>
+
+      <div class="bi-grid">
+        <article class="dashboard-card bi-card">
+          <div class="mini-head">
+            <span>Mix de transacciones</span>
+            <strong>{{ transactions().length }} movimientos</strong>
+          </div>
+          <div class="mix-list">
+            <div class="mix-row" *ngFor="let item of transactionMix()" [pTooltip]="mixTooltip(item)" tooltipPosition="top">
+              <div class="mix-label">
+                <i [style.background]="item.color"></i>
+                <span>{{ item.label }}</span>
+              </div>
+              <strong>{{ item.formatted }}</strong>
+              <div class="mix-track">
+                <span [style.width.%]="item.percent" [style.background]="item.color"></span>
+              </div>
+              <small>{{ item.percent }}%</small>
+            </div>
+          </div>
+        </article>
+
+        <article class="dashboard-card bi-card">
+          <div class="mini-head">
+            <span>Gasto por categoria</span>
+            <strong>Top {{ expenseByCategory().length }}</strong>
+          </div>
+          <div class="bar-list" *ngIf="expenseByCategory().length; else emptyBiCategories">
+            <div class="bar-row" *ngFor="let item of expenseByCategory()" [pTooltip]="barTooltip(item)" tooltipPosition="top">
+              <div>
+                <span>{{ item.label }}</span>
+                <strong>{{ item.formatted }}</strong>
+              </div>
+              <div class="bar-track"><span [style.width.%]="item.percent"></span></div>
+            </div>
+          </div>
+          <ng-template #emptyBiCategories>
+            <div class="empty-state inline"><i class="pi pi-chart-bar"></i><span>Sin gastos categorizados.</span></div>
+          </ng-template>
+        </article>
+
+        <article class="dashboard-card bi-card">
+          <div class="mini-head">
+            <span>Gasto por cuenta</span>
+            <strong>Concentracion</strong>
+          </div>
+          <div class="bar-list" *ngIf="expenseByAccount().length; else emptyBiAccounts">
+            <div class="bar-row" *ngFor="let item of expenseByAccount()" [pTooltip]="barTooltip(item)" tooltipPosition="top">
+              <div>
+                <span>{{ item.label }}</span>
+                <strong>{{ item.formatted }}</strong>
+              </div>
+              <div class="bar-track"><span [style.width.%]="item.percent"></span></div>
+            </div>
+          </div>
+          <ng-template #emptyBiAccounts>
+            <div class="empty-state inline"><i class="pi pi-wallet"></i><span>Sin gastos por cuenta.</span></div>
+          </ng-template>
+        </article>
+
+        <article class="dashboard-card bi-card">
+          <div class="mini-head">
+            <span>Uso de presupuestos</span>
+            <strong>{{ activeBudgets() }} activos</strong>
+          </div>
+          <div class="budget-usage" *ngIf="budgetUsage().length; else emptyBiBudgets">
+            <div class="budget-row" *ngFor="let budget of budgetUsage()" [pTooltip]="budgetTooltip(budget)" tooltipPosition="top">
+              <div>
+                <span>{{ budget.name }}</span>
+                <strong>{{ budget.spent | currency: 'USD' : 'symbol' : '1.0-0' }} / {{ budget.limit | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+              </div>
+              <p-progressBar [value]="budget.percent" [showValue]="false"></p-progressBar>
+              <small>{{ budget.percent | number: '1.0-0' }}% usado · queda {{ budget.remaining | currency: 'USD' : 'symbol' : '1.0-0' }}</small>
+            </div>
+          </div>
+          <ng-template #emptyBiBudgets>
+            <div class="empty-state inline"><i class="pi pi-chart-pie"></i><span>Sin presupuestos activos.</span></div>
+          </ng-template>
+        </article>
+
+      </div>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="dashboard-card bi-card debt-exposure-card">
+        <div class="mini-head">
+          <span>Exposicion de deudas</span>
+          <strong>{{ payableTotal() | currency: 'USD' : 'symbol' : '1.0-0' }} por pagar</strong>
+        </div>
+        <div class="bar-list" *ngIf="debtExposure().length; else emptyBiDebts">
+          <div
+            class="bar-row debt-bar"
+            *ngFor="let item of debtExposure()"
+            [class.receivable]="item.tone === 'income'"
+            [pTooltip]="barTooltip(item)"
+            tooltipPosition="top"
+          >
+            <div>
+              <span>{{ item.label }}</span>
+              <strong>{{ item.formatted }}</strong>
+            </div>
+            <div class="bar-track"><span [style.width.%]="item.percent"></span></div>
+          </div>
+        </div>
+        <ng-template #emptyBiDebts>
+          <div class="empty-state inline"><i class="pi pi-credit-card"></i><span>Sin deudas activas.</span></div>
+        </ng-template>
+      </article>
+
+      <article class="dashboard-card flow-card">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Flujo mensual</p>
+            <h3>Ingresos vs gastos</h3>
+            <p class="flow-summary">{{ flowChart().subtitle }}</p>
+          </div>
+          <span
+            class="status-pill"
+            [class.good]="flowSeverity() === 'success'"
+            [class.bad]="flowSeverity() === 'danger'"
+            [pTooltip]="flowTooltip()"
+            tooltipPosition="left"
+          >
+            {{ flowBadgeLabel() }}
+          </span>
+        </div>
+
+      <div class="chart-shell" *ngIf="flowChart().points.length; else emptyChart">
+        <svg viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" class="flow-chart" role="img" aria-label="Grafica de flujo mensual">
+          <defs>
+            <linearGradient id="incomeFill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#1f7a4d" stop-opacity="0.92" />
+              <stop offset="100%" stop-color="#1f7a4d" stop-opacity="0.22" />
+            </linearGradient>
+            <linearGradient id="expenseFill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#c44b4b" stop-opacity="0.92" />
+              <stop offset="100%" stop-color="#c44b4b" stop-opacity="0.22" />
+            </linearGradient>
+          </defs>
+
+          <g class="chart-grid">
+            <line x1="44" y1="72" x2="688" y2="72"></line>
+            <line x1="44" y1="124" x2="688" y2="124"></line>
+            <line x1="44" y1="176" x2="688" y2="176"></line>
+            <line x1="44" y1="228" x2="688" y2="228"></line>
+          </g>
+
+          <polyline class="net-line" [attr.points]="flowChart().netPath"></polyline>
+
+          <g *ngFor="let point of flowChart().points">
+            <rect class="income-bar" [attr.x]="point.x - 24" [attr.y]="point.incomeY" width="18" [attr.height]="point.incomeHeight" rx="5"></rect>
+            <rect class="expense-bar" [attr.x]="point.x + 2" [attr.y]="point.expenseY" width="18" [attr.height]="point.expenseHeight" rx="5"></rect>
+            <circle class="net-point" [attr.cx]="point.x + 2" [attr.cy]="point.netY" r="4"></circle>
+            <text class="chart-label" [attr.x]="point.x - 10" y="276">{{ point.label }}</text>
+            <text class="chart-value income-value" [attr.x]="point.x - 30" [attr.y]="point.incomeY - 8">
+              {{ point.income | currency: 'USD' : 'symbol' : '1.0-0' }}
+            </text>
+            <text class="chart-value expense-value" [attr.x]="point.x" [attr.y]="point.expenseY - 8">
+              {{ point.expense | currency: 'USD' : 'symbol' : '1.0-0' }}
+            </text>
+          </g>
+        </svg>
+      </div>
+
+      <ng-template #emptyChart>
+        <div class="empty-state compact">
+          <i class="pi pi-chart-line"></i>
+          <strong>Sin series disponibles</strong>
+          <span>Necesitas transacciones para ver la tendencia.</span>
+        </div>
+      </ng-template>
+
+      <div class="chart-legend">
+        <span><i class="legend-dot income"></i> Ingresos</span>
+        <span><i class="legend-dot expense"></i> Gastos</span>
+        <span><i class="legend-line"></i> Neto</span>
+      </div>
+      </article>
+    </section>
+
+    <section class="summary-grid">
+      <p-panel header="Cuentas" styleClass="dashboard-panel">
+        <div class="panel-summary">
+          <div pTooltip="Cantidad de cuentas marcadas como activas." tooltipPosition="top">
+            <span>Activas</span>
+            <strong>{{ activeAccounts() }}</strong>
+          </div>
+          <div pTooltip="Suma del balance actual de todas las cuentas registradas." tooltipPosition="top">
+            <span>Balance</span>
+            <strong>{{ totalAccountBalance() | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+          </div>
+        </div>
+
+        <ng-container *ngIf="topAccounts().length; else emptyAccounts">
+          <div class="entity-list">
+            <article class="entity-row" *ngFor="let account of topAccounts()" [pTooltip]="account.name + ': representa ' + (account.share | number: '1.0-0') + '% del balance total.'" tooltipPosition="top">
+              <div class="entity-copy">
+                <strong>{{ account.name }}</strong>
+                <span>{{ account.accountType }} / {{ account.currency }}</span>
+              </div>
+              <div class="entity-meta">
+                <app-money-cell [value]="account.balance" [currency]="account.currency"></app-money-cell>
+                <p-tag [severity]="account.isActive ? 'success' : 'danger'" [value]="account.isActive ? 'Activa' : 'Inactiva'"></p-tag>
+              </div>
+              <p-progressBar [value]="account.share" [showValue]="false"></p-progressBar>
+            </article>
+          </div>
+        </ng-container>
+        <ng-template #emptyAccounts>
+          <div class="empty-state inline"><i class="pi pi-wallet"></i><span>Sin cuentas registradas.</span></div>
+        </ng-template>
+      </p-panel>
+
+      <p-panel header="Presupuestos" styleClass="dashboard-panel">
+        <div class="panel-summary">
+          <div pTooltip="Cantidad de presupuestos activos disponibles para seguimiento." tooltipPosition="top">
+            <span>Activos</span>
+            <strong>{{ activeBudgets() }}</strong>
+          </div>
+          <div pTooltip="Suma de los limites definidos en tus presupuestos." tooltipPosition="top">
+            <span>Límite</span>
+            <strong>{{ totalBudgetLimit() | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+          </div>
+        </div>
+
+        <ng-container *ngIf="topBudgets().length; else emptyBudgets">
+          <div class="entity-list">
+            <article class="entity-row" *ngFor="let budget of topBudgets()" [pTooltip]="budget.name + ': limite de ' + (budget.limitAmount | currency: 'USD' : 'symbol' : '1.0-0') + ' para periodo ' + budget.periodType + '.'" tooltipPosition="top">
+              <div class="entity-copy">
+                <strong>{{ budget.name }}</strong>
+                <span>{{ budget.periodType }} / {{ budget.validityType }}</span>
+              </div>
+              <div class="entity-meta">
+                <app-money-cell [value]="budget.limitAmount"></app-money-cell>
+                <p-tag [severity]="budget.isActive ? 'success' : 'warn'" [value]="budget.isActive ? 'Activo' : 'Dormido'"></p-tag>
+              </div>
+            </article>
+          </div>
+        </ng-container>
+        <ng-template #emptyBudgets>
+          <div class="empty-state inline"><i class="pi pi-chart-pie"></i><span>Sin presupuestos activos.</span></div>
+        </ng-template>
+      </p-panel>
+    </section>
+
+    <section class="lower-grid">
+      <p-panel class="goals-panel-shell" header="Metas" styleClass="dashboard-panel">
+      <div class="panel-summary goals-summary" [pTooltip]="goalSummaryTooltip()" tooltipPosition="top">
+        <div pTooltip="Cantidad total de metas de ahorro y compra registradas." tooltipPosition="top">
+          <span>Total metas</span>
+          <strong>{{ totalGoals() }}</strong>
+        </div>
+        <div pTooltip="Suma de los montos objetivo de todas las metas." tooltipPosition="top">
+          <span>Objetivo total</span>
+          <strong>{{ totalGoalTarget() | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+        </div>
+        <div pTooltip="Total actualmente acumulado en tus metas." tooltipPosition="top">
+          <span>Ahorrado</span>
+          <strong>{{ totalGoalCurrent() | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+        </div>
+        <div pTooltip="Diferencia entre objetivo total y monto ahorrado." tooltipPosition="top">
+          <span>Faltante</span>
+          <strong>{{ totalGoalRemaining() | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+        </div>
+      </div>
+      <p-progressBar
+        class="goals-total-progress"
+        [value]="totalGoalProgress()"
+        [showValue]="false"
+        pTooltip="Avance global: ahorrado total dividido para objetivo total."
+        tooltipPosition="top"
+      ></p-progressBar>
+      <p class="helper-line goals-helper">{{ totalGoalProgress() | number: '1.0-0' }}% global completado.</p>
+
+      <ng-container *ngIf="detailedGoals().length; else emptyGoals">
+        <div class="entity-list">
+          <article class="entity-row goal-row detailed-goal-row" *ngFor="let goal of detailedGoals()" [pTooltip]="goalRowTooltip(goal)" tooltipPosition="top">
+            <div class="entity-copy">
+              <strong>{{ goal.title }}</strong>
+              <span>{{ goal.kind }} / {{ goal.status }} / {{ goalAccountLabel(goal) }}</span>
+            </div>
+            <div class="entity-meta">
+              <div class="goal-amounts">
+                <strong>{{ goal.current | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+                <span>de {{ goal.target | currency: 'USD' : 'symbol' : '1.0-0' }}</span>
+              </div>
+              <p-tag [value]="goal.kind" [severity]="goal.kind === 'Ahorro' ? 'success' : 'info'"></p-tag>
+            </div>
+            <p-progressBar [value]="goal.progress" [showValue]="false"></p-progressBar>
+            <div class="detail-grid goal-detail-grid">
+                <div pTooltip="Monto total que quieres alcanzar para esta meta." tooltipPosition="top">
+                  <span>Objetivo</span>
+                  <strong>{{ goal.target | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+                </div>
+                <div pTooltip="Porcentaje calculado como avance dividido para objetivo." tooltipPosition="top">
+                  <span>Avance</span>
+                  <strong>{{ goal.progress | number: '1.0-0' }}%</strong>
+                </div>
+                <div pTooltip="Monto que falta para completar esta meta." tooltipPosition="top">
+                  <span>Faltante</span>
+                  <strong>{{ goalRemaining(goal) | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+                </div>
+                <div pTooltip="Fecha objetivo registrada para completar la meta." tooltipPosition="top">
+                  <span>Fecha objetivo</span>
+                  <strong>{{ goalDueLabel(goal) }}</strong>
+                </div>
+                <div pTooltip="Dias restantes calculados contra la fecha actual." tooltipPosition="top">
+                  <span>Tiempo</span>
+                  <strong>{{ goalDaysLabel(goal) }}</strong>
+                </div>
+                <div pTooltip="Aporte mensual sugerido para llegar al objetivo en la fecha definida." tooltipPosition="top">
+                  <span>Mensual sugerido</span>
+                  <strong>{{ goal.suggestedMonthlyContribution ? (goal.suggestedMonthlyContribution | currency: 'USD' : 'symbol' : '1.0-0') : 'No definido' }}</strong>
+                </div>
+                <div pTooltip="Cuenta asociada a la meta, cuando fue registrada." tooltipPosition="top">
+                  <span>Cuenta</span>
+                  <strong>{{ goalAccountLabel(goal) }}</strong>
+                </div>
+                <div pTooltip="Prioridad registrada para metas de compra. Las metas de ahorro muestran prioridad 0." tooltipPosition="top">
+                  <span>Prioridad</span>
+                  <strong>{{ goal.priority }}</strong>
+                </div>
+            </div>
+          </article>
+        </div>
+      </ng-container>
+      <ng-template #emptyGoals>
+        <div class="empty-state inline"><i class="pi pi-flag"></i><span>Sin metas pendientes.</span></div>
+      </ng-template>
+      </p-panel>
+
+      <p-panel header="Deudas" styleClass="dashboard-panel">
+      <div class="panel-summary">
+        <div pTooltip="Suma de saldos pendientes de todas las deudas registradas." tooltipPosition="top">
+          <span>Pendiente</span>
+          <strong>{{ totalDebtRemaining() | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+        </div>
+        <div pTooltip="Cantidad total de registros de deuda." tooltipPosition="top">
+          <span>Entradas</span>
+          <strong>{{ debts().length }}</strong>
+        </div>
+      </div>
+
+      <ng-container *ngIf="topDebts().length; else emptyDebts">
+        <div class="entity-list">
+          <article class="entity-row debt-row" *ngFor="let debt of topDebts()" [pTooltip]="debt.contactName + ': pendiente ' + (debt.remainingAmount | currency: debt.currency : 'symbol' : '1.0-0') + ' de ' + (debt.originalAmount | currency: debt.currency : 'symbol' : '1.0-0') + '.'" tooltipPosition="top">
+            <div class="entity-copy">
+              <strong>{{ debt.contactName }}</strong>
+              <span>{{ debt.type }} / vence {{ debt.dueDate ? (debt.dueDate | date: 'mediumDate') : 'sin fecha' }}</span>
+            </div>
+            <div class="entity-meta">
+              <app-money-cell [value]="debt.remainingAmount" [currency]="debt.currency"></app-money-cell>
+              <p-tag [value]="debt.status" [severity]="debt.status === 'Active' ? 'warn' : debt.status === 'Paid' ? 'success' : 'danger'"></p-tag>
+            </div>
+            <p-progressBar [value]="debt.progress" [showValue]="false"></p-progressBar>
+            <div class="detail-grid">
+                <div pTooltip="Monto inicial registrado para esta deuda." tooltipPosition="top">
+                  <span>Original</span>
+                  <strong>{{ debt.originalAmount | currency: debt.currency : 'symbol' : '1.0-0' }}</strong>
+                </div>
+                <div pTooltip="Monto ya cubierto: original menos saldo pendiente." tooltipPosition="top">
+                  <span>Abonado</span>
+                  <strong>{{ debt.originalAmount - debt.remainingAmount | currency: debt.currency : 'symbol' : '1.0-0' }}</strong>
+                </div>
+                <div pTooltip="Fecha limite o referencia registrada para esta deuda." tooltipPosition="top">
+                  <span>Vence</span>
+                  <strong>{{ debt.dueDate ? (debt.dueDate | date: 'mediumDate') : 'Sin fecha' }}</strong>
+                </div>
+                <div pTooltip="Porcentaje pagado sobre el monto original." tooltipPosition="top">
+                  <span>Avance</span>
+                  <strong>{{ debt.progress | number: '1.0-0' }}%</strong>
+                </div>
+            </div>
+          </article>
+        </div>
+      </ng-container>
+      <ng-template #emptyDebts>
+        <div class="empty-state inline"><i class="pi pi-credit-card"></i><span>Sin deudas abiertas.</span></div>
+      </ng-template>
+      </p-panel>
+
+      <p-panel header="Actividad reciente" styleClass="dashboard-panel">
+      <ng-container *ngIf="recentTransactions().length; else emptyTransactions">
+        <div class="entity-list">
+          <article class="activity-row" *ngFor="let transaction of recentTransactions()" [pTooltip]="transaction.type + ': ' + (transaction.amount | currency: transaction.currency : 'symbol' : '1.0-0') + ' registrado el ' + (transaction.transactionDate | date: 'mediumDate') + '.'" tooltipPosition="top">
+            <div class="activity-icon" [class.income]="transaction.type === 'Income'" [class.expense]="transaction.type === 'Expense'">
+              <i [class]="'pi ' + (transaction.type === 'Income' ? 'pi-arrow-down-left' : transaction.type === 'Expense' ? 'pi-arrow-up-right' : 'pi-arrow-right-arrow-left')"></i>
+            </div>
+            <div class="entity-copy">
+              <strong>{{ transaction.description || transaction.type }}</strong>
+              <span>{{ transaction.transactionDate | date: 'mediumDate' }}</span>
+            </div>
+            <div class="entity-meta">
+              <p-tag [severity]="transactionSeverity(transaction.type)" [value]="transaction.type"></p-tag>
+              <app-money-cell [value]="transaction.amount" [currency]="transaction.currency"></app-money-cell>
+            </div>
+          </article>
+        </div>
+      </ng-container>
+      <ng-template #emptyTransactions>
+        <div class="empty-state inline"><i class="pi pi-arrow-right-arrow-left"></i><span>Sin movimientos recientes.</span></div>
+      </ng-template>
+      </p-panel>
+    </section>
+  </ng-container>
+
+  <ng-template #loadingState>
+    <section class="loading-state">
+      <p-progressSpinner ariaLabel="Cargando dashboard"></p-progressSpinner>
+      <span>Cargando datos financieros...</span>
+    </section>
+  </ng-template>
+</div>

@@ -1,13 +1,34 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ButtonModule } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ToastModule } from 'primeng/toast';
+import { ToolbarModule } from 'primeng/toolbar';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [CommonModule, RouterLink, RouterLinkActive, RouterOutlet, ButtonModule, ConfirmDialogModule, ToastModule, ToolbarModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
-  title = 'finanzasUI';
+  menuOpen = false;
+
+  readonly navItems = [
+    { label: 'Dashboard', icon: 'pi pi-chart-line', route: '/dashboard' },
+    { label: 'Cuentas', icon: 'pi pi-wallet', route: '/accounts' },
+    { label: 'Transacciones', icon: 'pi pi-arrow-right-arrow-left', route: '/transactions' },
+    { label: 'Presupuestos', icon: 'pi pi-chart-pie', route: '/budgets' },
+    { label: 'Metas ahorro', icon: 'pi pi-flag', route: '/goals/savings' },
+    { label: 'Metas compra', icon: 'pi pi-shopping-bag', route: '/goals/purchases' },
+    { label: 'Deudas', icon: 'pi pi-credit-card', route: '/debts' },
+    { label: 'Cripto', icon: 'pi pi-bitcoin', route: '/crypto' },
+    { label: 'Categorias', icon: 'pi pi-sitemap', route: '/catalogs/categories' },
+    { label: 'Tags', icon: 'pi pi-tags', route: '/catalogs/tags' },
+    { label: 'Periodos', icon: 'pi pi-calendar-clock', route: '/settings/accounting-periods' },
+    { label: 'Recurrentes', icon: 'pi pi-refresh', route: '/settings/recurring-rules' },
+    { label: 'Contexto', icon: 'pi pi-sliders-h', route: '/settings/user-context' }
+  ];
 }

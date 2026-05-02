@@ -1,0 +1,211 @@
+<app-page-header [title]="definition.title" [subtitle]="definition.subtitle" [icon]="definition.icon">
+  <button *ngIf="showCreate()" pButton type="button" icon="pi pi-plus" label="Nuevo" (click)="openCreate()"></button>
+</app-page-header>
+
+<p-toolbar *ngIf="definition.filter" styleClass="resource-toolbar">
+  <div class="toolbar-filter">
+    <label [for]="definition.filter.key">{{ definition.filter.label }}</label>
+    <input
+      pInputText
+      [id]="definition.filter.key"
+      [placeholder]="definition.filter.placeholder"
+      [(ngModel)]="filterValue"
+      (keydown.enter)="load()"
+    />
+    <button pButton type="button" icon="pi pi-search" label="Filtrar" severity="secondary" (click)="load()"></button>
+  </div>
+</p-toolbar>
+
+<section class="resource-card">
+  <p-table
+    [value]="items()"
+    [loading]="loading()"
+    [paginator]="items().length > 10"
+    [rows]="10"
+    responsiveLayout="scroll"
+    dataKey="id"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th *ngFor="let field of tableFields()">{{ field.label }}</th>
+        <th class="actions-col">Acciones</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-item>
+      <tr [class.selected-row]="selectedParent === item">
+        <td *ngFor="let field of tableFields()">
+          <app-money-cell *ngIf="field.type === 'currency'; else nonMoney" [value]="item[field.key]"></app-money-cell>
+          <ng-template #nonMoney>
+            <app-status-tag
+              *ngIf="field.key === 'status' || field.key === 'isActive'; else plainCell"
+              [value]="field.key === 'isActive' ? (item[field.key] ? 'Active' : 'Inactive') : item[field.key]"
+            ></app-status-tag>
+          </ng-template>
+          <ng-template #plainCell>
+            <span *ngIf="field.type === 'color'" class="color-cell">
+              <span class="color-dot" [style.background]="item[field.key]"></span>{{ item[field.key] || '-' }}
+            </span>
+            <span *ngIf="field.type !== 'color' && field.type !== 'date'">{{ displayValue(item, field) }}</span>
+            <span *ngIf="field.type === 'date'">{{ item[field.key] | date: 'mediumDate' }}</span>
+          </ng-template>
+        </td>
+        <td class="row-actions">
+          <button
+            *ngIf="definition.children?.length"
+            pButton
+            type="button"
+            icon="pi pi-list"
+            severity="secondary"
+            text
+            rounded
+            (click)="selectParent(item)"
+            title="Detalle"
+          ></button>
+          <button pButton type="button" icon="pi pi-pencil" text rounded (click)="openEdit(item)" title="Editar"></button>
+          <button pButton type="button" icon="pi pi-trash" severity="danger" text rounded (click)="remove(item)" title="Eliminar"></button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td [attr.colspan]="tableFields().length + 1">
+          <div class="empty-state">
+            <i class="pi pi-inbox"></i>
+            <strong>No hay registros</strong>
+            <span>Cuando la API devuelva datos apareceran aqui.</span>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</section>
+
+<section class="resource-card child-card" *ngIf="activeChild && selectedParent">
+  <div class="child-header">
+    <div>
+      <h2>{{ activeChild.title }}</h2>
+      <p>Registro padre: {{ selectedParent['name'] || selectedParent['contactName'] || selectedParent['id'] }}</p>
+    </div>
+    <button pButton type="button" icon="pi pi-plus" label="Agregar" (click)="openChildCreate()"></button>
+  </div>
+
+  <p-table [value]="childItems()" [loading]="childLoading()" responsiveLayout="scroll">
+    <ng-template pTemplate="header">
+      <tr>
+        <th *ngFor="let field of childTableFields()">{{ field.label }}</th>
+        <th class="actions-col">Acciones</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-item>
+      <tr>
+        <td *ngFor="let field of childTableFields()">
+          <app-money-cell *ngIf="field.type === 'currency'; else childPlain" [value]="item[field.key]"></app-money-cell>
+          <ng-template #childPlain>
+            <span *ngIf="field.type === 'date'">{{ item[field.key] | date: 'mediumDate' }}</span>
+            <span *ngIf="field.type !== 'date'">{{ displayValue(item, field) }}</span>
+          </ng-template>
+        </td>
+        <td class="row-actions">
+          <button pButton type="button" icon="pi pi-pencil" text rounded (click)="openChildEdit(item)" title="Editar"></button>
+          <button pButton type="button" icon="pi pi-trash" severity="danger" text rounded (click)="removeChild(item)" title="Eliminar"></button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td [attr.colspan]="childTableFields().length + 1">
+          <div class="empty-state compact">
+            <i class="pi pi-list"></i>
+            <strong>Sin detalle</strong>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</section>
+
+<p-dialog
+  [(visible)]="dialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [style]="{ width: 'min(760px, 94vw)' }"
+  [header]="editingItem ? 'Editar ' + definition.title : 'Nuevo ' + definition.title"
+>
+  <form class="resource-form" [formGroup]="form" (ngSubmit)="save()">
+    <div class="form-callout crypto-callout" *ngIf="isCryptoAccountForm()">
+      <i class="pi pi-bitcoin"></i>
+      <div>
+        <strong>Cuenta de criptomonedas</strong>
+        <span>Estos datos se usarán para registrar símbolo, red, cantidad y precio promedio.</span>
+      </div>
+    </div>
+
+    <ng-container *ngFor="let field of visibleFields()">
+      <label *ngIf="!field.readonly" class="field-control">
+        <span>{{ field.label }}</span>
+        <ng-container [ngSwitch]="field.type">
+          <input *ngSwitchCase="'text'" pInputText [formControlName]="field.key" [placeholder]="field.placeholder || field.label" />
+          <textarea *ngSwitchCase="'textarea'" pTextarea rows="3" [formControlName]="field.key"></textarea>
+          <p-inputNumber *ngSwitchCase="'number'" [formControlName]="field.key" mode="decimal"></p-inputNumber>
+          <p-inputNumber *ngSwitchCase="'currency'" [formControlName]="field.key" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
+          <p-calendar *ngSwitchCase="'date'" [formControlName]="field.key" [showIcon]="true" appendTo="body"></p-calendar>
+          <p-select
+            *ngSwitchCase="'select'"
+            [options]="selectOptions(field)"
+            optionLabel="label"
+            optionValue="value"
+            [formControlName]="field.key"
+            appendTo="body"
+            [placeholder]="field.placeholder || field.label"
+          ></p-select>
+          <p-colorPicker *ngSwitchCase="'color'" [formControlName]="field.key"></p-colorPicker>
+          <p-checkbox *ngSwitchCase="'boolean'" [binary]="true" [formControlName]="field.key"></p-checkbox>
+          <input *ngSwitchCase="'tags'" pInputText [formControlName]="field.key" placeholder="tagId1, tagId2" />
+        </ng-container>
+        <small *ngIf="isInvalid(field)">Campo requerido o valor invalido.</small>
+      </label>
+    </ng-container>
+
+    <footer>
+      <button pButton type="button" label="Cancelar" severity="secondary" outlined (click)="dialogVisible = false"></button>
+      <button pButton type="submit" label="Guardar" icon="pi pi-check"></button>
+    </footer>
+  </form>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="childDialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [style]="{ width: 'min(620px, 94vw)' }"
+  [header]="editingChildItem ? 'Editar detalle' : 'Nuevo detalle'"
+>
+  <form class="resource-form" [formGroup]="childForm" (ngSubmit)="saveChild()" *ngIf="activeChild">
+    <label *ngFor="let field of visibleFields(activeChild.fields, childForm)" class="field-control">
+      <span>{{ field.label }}</span>
+      <ng-container [ngSwitch]="field.type">
+        <input *ngSwitchCase="'text'" pInputText [formControlName]="field.key" />
+        <textarea *ngSwitchCase="'textarea'" pTextarea rows="3" [formControlName]="field.key"></textarea>
+        <p-select
+          *ngSwitchCase="'select'"
+          [options]="selectOptions(field)"
+          optionLabel="label"
+          optionValue="value"
+          [formControlName]="field.key"
+          appendTo="body"
+          [placeholder]="field.placeholder || field.label"
+        ></p-select>
+        <p-inputNumber *ngSwitchCase="'currency'" [formControlName]="field.key" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
+        <p-calendar *ngSwitchCase="'date'" [formControlName]="field.key" [showIcon]="true" appendTo="body"></p-calendar>
+      </ng-container>
+      <small *ngIf="isInvalid(field, true)">Campo requerido o valor invalido.</small>
+    </label>
+
+    <footer>
+      <button pButton type="button" label="Cancelar" severity="secondary" outlined (click)="childDialogVisible = false"></button>
+      <button pButton type="submit" label="Guardar" icon="pi pi-check"></button>
+    </footer>
+  </form>
+</p-dialog>
