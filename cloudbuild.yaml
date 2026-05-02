@@ -7,7 +7,6 @@ steps:
         npm install --global bun@1.3.3
         bun install --frozen-lockfile
         bun run build:gcs
-        grep '<base href="/finanzas-ui/">' dist/finanzas-ui/browser/index.html
 
   - name: 'gcr.io/cloud-builders/gsutil'
     args: ['-m', 'rsync', '-r', '-d', 'dist/finanzas-ui/browser', 'gs://finanzas-ui']
