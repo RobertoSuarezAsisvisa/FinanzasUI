@@ -38,7 +38,7 @@
           },
           "configurations": {
             "production": {
-              "baseHref": "/finanzas-ui/",
+              "baseHref": "/",
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
