@@ -1,8 +1,10 @@
-export type FieldType = 'text' | 'number' | 'currency' | 'date' | 'select' | 'color' | 'boolean' | 'textarea' | 'tags';
+export type FieldType = 'text' | 'number' | 'currency' | 'date' | 'select' | 'multiselect' | 'color' | 'boolean' | 'textarea' | 'tags';
 
 export interface ResourceOption {
   label: string;
   value: string;
+  balance?: number;
+  currency?: string;
 }
 
 export interface ResourceField {
@@ -14,6 +16,8 @@ export interface ResourceField {
   options?: Array<string | ResourceOption>;
   placeholder?: string;
   table?: boolean;
+  showTime?: boolean;
+  defaultNow?: boolean;
   visibleWhen?: {
     key: string;
     value: unknown;

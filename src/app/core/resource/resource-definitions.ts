@@ -9,12 +9,12 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
     path: 'accounts',
     fields: [
       { key: 'name', label: 'Nombre', type: 'text', required: true, table: true },
-      { key: 'accountType', label: 'Tipo', type: 'select', required: true, options: ['Bank', 'Cash', 'CreditCard', 'Crypto'], table: true },
+      { key: 'accountType', label: 'Tipo', type: 'select', required: true, options: ['Bank', 'Cash', 'DigitalWallet', 'Crypto'], table: true },
       { key: 'currency', label: 'Moneda', type: 'select', required: true, options: ['USD', 'EUR', 'BTC', 'ETH'], table: true },
       { key: 'balance', label: 'Balance', type: 'currency', table: true },
       { key: 'bankName', label: 'Banco', type: 'text', table: true },
-      { key: 'accountNumber', label: 'Numero de cuenta', type: 'text' },
-      { key: 'provider', label: 'Proveedor', type: 'text' },
+      { key: 'accountNumber', label: 'Numero de cuenta', type: 'text', table: true },
+      { key: 'provider', label: 'Proveedor', type: 'text', table: true },
       {
         key: 'cryptoSymbol',
         label: 'Simbolo cripto',
@@ -45,14 +45,14 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
       { key: 'type', label: 'Tipo', type: 'select', required: true, options: ['Income', 'Expense', 'Transfer'], table: true },
       { key: 'amount', label: 'Monto', type: 'currency', required: true, table: true },
       { key: 'currency', label: 'Moneda', type: 'select', required: true, options: ['USD', 'EUR', 'BTC', 'ETH'], table: true },
-      { key: 'accountId', label: 'Cuenta origen', type: 'text', required: true, table: true },
-      { key: 'toAccountId', label: 'Cuenta destino', type: 'text' },
-      { key: 'categoryId', label: 'Categoria', type: 'text', table: true },
+      { key: 'accountId', label: 'Cuenta origen', type: 'select', required: true, table: true },
+      { key: 'toAccountId', label: 'Cuenta destino', type: 'select', visibleWhen: { key: 'type', value: 'Transfer' } },
+      { key: 'categoryId', label: 'Categoria', type: 'select', table: true },
       { key: 'description', label: 'Descripcion', type: 'textarea', table: true },
       { key: 'reference', label: 'Referencia', type: 'text' },
-      { key: 'transactionDate', label: 'Fecha', type: 'date', required: true, table: true },
+      { key: 'transactionDate', label: 'Fecha', type: 'date', required: true, table: true, showTime: true, defaultNow: true },
       { key: 'recurringRuleId', label: 'Regla recurrente', type: 'text' },
-      { key: 'tagIds', label: 'Tags', type: 'tags' }
+      { key: 'tagIds', label: 'Tags', type: 'multiselect' }
     ]
   },
   budgets: {
@@ -106,9 +106,9 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
     fields: [
       { key: 'name', label: 'Nombre', type: 'text', required: true, table: true },
       { key: 'targetAmount', label: 'Meta', type: 'currency', required: true, table: true },
-      { key: 'accountId', label: 'Cuenta', type: 'text', required: true, table: true },
+      { key: 'accountId', label: 'Cuenta asociada', type: 'select', required: true, table: true },
       { key: 'targetDate', label: 'Fecha objetivo', type: 'date', required: true, table: true },
-      { key: 'status', label: 'Estado', type: 'select', options: ['InProgress', 'Saving', 'Completed', 'Cancelled'], table: true }
+      { key: 'status', label: 'Estado', type: 'select', options: ['InProgress', 'Completed', 'Cancelled'], table: true }
     ],
     children: [
       {
@@ -121,8 +121,9 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
         parentParam: 'savingGoalId',
         fields: [
           { key: 'amount', label: 'Monto', type: 'currency', required: true, table: true },
-          { key: 'contributionDate', label: 'Fecha', type: 'date', required: true, table: true },
-          { key: 'transactionId', label: 'Transaccion', type: 'text', table: true }
+          { key: 'accountId', label: 'Cuenta a debitar', type: 'select', required: true, table: true },
+          { key: 'contributionDate', label: 'Fecha', type: 'date', required: true, table: true, showTime: true, defaultNow: true },
+          { key: 'transactionId', label: 'Transaccion', type: 'text', table: true, readonly: true }
         ]
       }
     ]
@@ -139,7 +140,7 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
       { key: 'description', label: 'Descripcion', type: 'textarea', table: true },
       { key: 'priority', label: 'Prioridad', type: 'number', table: true },
       { key: 'url', label: 'URL', type: 'text' },
-      { key: 'accountId', label: 'Cuenta', type: 'text', required: true, table: true },
+      { key: 'accountId', label: 'Cuenta asociada', type: 'select', required: true, table: true },
       { key: 'targetDate', label: 'Fecha objetivo', type: 'date', required: true, table: true },
       { key: 'status', label: 'Estado', type: 'select', options: ['Saving', 'Completed', 'Cancelled'], table: true },
       { key: 'purchasedAt', label: 'Comprado en', type: 'date' }
@@ -155,8 +156,9 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
         parentParam: 'purchaseGoalId',
         fields: [
           { key: 'amount', label: 'Monto', type: 'currency', required: true, table: true },
-          { key: 'contributionDate', label: 'Fecha', type: 'date', required: true, table: true },
-          { key: 'transactionId', label: 'Transaccion', type: 'text', table: true }
+          { key: 'accountId', label: 'Cuenta a debitar', type: 'select', required: true, table: true },
+          { key: 'contributionDate', label: 'Fecha', type: 'date', required: true, table: true, showTime: true, defaultNow: true },
+          { key: 'transactionId', label: 'Transaccion', type: 'text', table: true, readonly: true }
         ]
       }
     ]

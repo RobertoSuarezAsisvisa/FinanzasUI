@@ -1,7 +1,7 @@
 export type Id = string;
 
 export type TransactionType = 'Income' | 'Expense' | 'Transfer';
-export type AccountType = 'Bank' | 'Cash' | 'CreditCard' | 'Crypto' | string;
+export type AccountType = 'Bank' | 'Cash' | 'DigitalWallet' | 'Crypto' | string;
 export type GoalStatus = 'InProgress' | 'Saving' | 'Completed' | 'Cancelled' | string;
 export type DebtType = 'Payable' | 'Receivable';
 export type DebtStatus = 'Active' | 'Paid' | 'Cancelled' | string;
@@ -187,6 +187,7 @@ export interface AccountSummary {
   balance: number;
   isActive: boolean;
   bankName?: string | null;
+  accountNumber?: string | null;
   provider?: string | null;
   cryptoSymbol?: string | null;
   cryptoNetwork?: string | null;
@@ -205,6 +206,14 @@ export interface TransactionSummary {
   description?: string | null;
   reference?: string | null;
   transactionDate: string;
+  tagIds?: Id[];
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface BudgetSummary {

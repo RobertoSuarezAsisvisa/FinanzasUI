@@ -176,8 +176,8 @@ export class DashboardComponent implements OnInit {
   activeAccounts = computed(() => this.accounts().filter((account) => account.isActive).length);
   activeBudgets = computed(() => this.budgets().filter((budget) => budget.isActive).length);
   totalBudgetLimit = computed(() => this.sum(this.budgets(), 'limitAmount'));
-  totalDebtRemaining = computed(() => this.sum(this.debts(), 'remainingAmount'));
-  activeDebts = computed(() => this.debts().filter((debt) => debt.status === 'Active').length);
+  totalDebtRemaining = computed(() => this.payableTotal());
+  activeDebts = computed(() => this.debts().filter((debt) => debt.type === 'Payable' && debt.status === 'Active').length);
   receivableTotal = computed(() =>
     this.debts()
       .filter((debt) => debt.type === 'Receivable' && debt.status === 'Active')
@@ -282,11 +282,11 @@ export class DashboardComponent implements OnInit {
         tooltip: 'Suma de los aportes mensuales sugeridos para tus metas de ahorro y compra.'
       },
       {
-        label: 'Deuda neta',
-        value: this.formatAmount(this.payableTotal() - this.receivableTotal(), 'USD'),
-        detail: `${this.activeDebts()} deudas activas`,
+        label: 'Deuda por pagar',
+        value: this.formatAmount(this.payableTotal(), 'USD'),
+        detail: `${this.activeDebts()} deudas por pagar activas`,
         tone: 'debt',
-        tooltip: 'Deudas por pagar menos valores por cobrar. Si es positivo, representa exposicion neta pendiente.'
+        tooltip: 'Suma de saldos pendientes solo en deudas por pagar activas. No incluye valores por cobrar.'
       }
     ];
   });
@@ -294,7 +294,10 @@ export class DashboardComponent implements OnInit {
     const overview = this.overview();
 
     if (overview) {
-      return overview;
+      return {
+        ...overview,
+        totalDebts: this.payableTotal()
+      };
     }
 
     return {
@@ -352,12 +355,12 @@ export class DashboardComponent implements OnInit {
         tooltip: 'Cantidad de metas de ahorro y metas de compra registradas.'
       },
       {
-        label: 'Deuda pendiente',
+        label: 'Deuda por pagar',
         value: summary.totalDebts,
         icon: 'pi pi-credit-card',
         money: true,
         tone: 'debt',
-        tooltip: 'Suma de saldos pendientes en deudas que no estan pagadas.'
+        tooltip: 'Suma de saldos pendientes solo en deudas por pagar activas. No incluye valores por cobrar.'
       }
     ];
   });

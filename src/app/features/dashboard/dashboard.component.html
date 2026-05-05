@@ -402,13 +402,13 @@
 
       <p-panel header="Deudas" styleClass="dashboard-panel">
       <div class="panel-summary">
-        <div pTooltip="Suma de saldos pendientes de todas las deudas registradas." tooltipPosition="top">
+        <div pTooltip="Suma de saldos pendientes solo en deudas por pagar activas. No incluye valores por cobrar." tooltipPosition="top">
           <span>Pendiente</span>
           <strong>{{ totalDebtRemaining() | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
         </div>
-        <div pTooltip="Cantidad total de registros de deuda." tooltipPosition="top">
+        <div pTooltip="Cantidad de deudas por pagar activas." tooltipPosition="top">
           <span>Entradas</span>
-          <strong>{{ debts().length }}</strong>
+          <strong>{{ activeDebts() }}</strong>
         </div>
       </div>
 

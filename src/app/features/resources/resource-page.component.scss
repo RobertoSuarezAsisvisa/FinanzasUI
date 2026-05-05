@@ -9,6 +9,24 @@
   gap: 0.75rem;
 }
 
+.transaction-filter-grid {
+  align-items: end;
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(5, minmax(9rem, 1fr)) minmax(14rem, 1.2fr) auto;
+  width: 100%;
+}
+
+.transaction-filter-grid .field-control {
+  margin: 0;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
 .toolbar-filter label,
 .field-control span {
   color: var(--text-color-secondary);
@@ -55,6 +73,19 @@
   white-space: nowrap;
 }
 
+.active-toggle-cell {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.65rem;
+  min-width: 7rem;
+}
+
+.active-toggle-cell > span {
+  color: var(--text-color-secondary);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
 .selected-row {
   background: #eef7f1;
 }
@@ -99,6 +130,85 @@
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-section {
+  border: 1px solid var(--surface-200);
+  border-radius: 0.65rem;
+  display: grid;
+  gap: 1rem;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 1rem;
+}
+
+.form-section-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.75rem;
+  grid-column: 1 / -1;
+}
+
+.form-section-head i {
+  align-items: center;
+  background: #eef7f1;
+  border: 1px solid #cfe1d5;
+  border-radius: 0.5rem;
+  color: #16794a;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 2.25rem;
+  justify-content: center;
+  width: 2.25rem;
+}
+
+.form-section-head strong,
+.form-section-head span {
+  display: block;
+}
+
+.form-section-head strong {
+  color: var(--text-color);
+  font-size: 0.96rem;
+}
+
+.form-section-head span {
+  color: var(--text-color-secondary);
+  font-size: 0.84rem;
+  line-height: 1.35;
+  margin-top: 0.15rem;
+}
+
+.account-section {
+  background: #fcfdfc;
+}
+
+.transaction-section {
+  background: #fcfdfc;
+}
+
+.crypto-section {
+  background:
+    linear-gradient(90deg, rgba(22, 121, 74, 0.07), transparent 38%),
+    #fcfdfc;
+}
+
+.account-status-section {
+  align-items: center;
+  background: #f7fbf8;
+  grid-template-columns: 1fr;
+  padding-block: 0.85rem;
+}
+
+.toggle-field {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.toggle-field span {
+  margin: 0;
 }
 
 .form-callout {
@@ -149,6 +259,99 @@
   margin-top: 0.3rem;
 }
 
+.field-control .account-balance-hint {
+  color: #16794a;
+  font-weight: 700;
+}
+
+.action-summary {
+  background: #f7fbf8;
+  border: 1px solid #cfe1d5;
+  border-radius: 0.65rem;
+  display: grid;
+  gap: 0.85rem;
+  grid-column: 1 / -1;
+  padding: 0.9rem;
+}
+
+.action-summary-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.7rem;
+}
+
+.action-summary-head i {
+  align-items: center;
+  background: #eef7f1;
+  border: 1px solid #cfe1d5;
+  border-radius: 0.45rem;
+  color: #16794a;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.action-summary-head strong,
+.action-summary-head span {
+  display: block;
+}
+
+.action-summary-head strong {
+  color: var(--text-color);
+  font-size: 0.92rem;
+}
+
+.action-summary-head span {
+  color: var(--text-color-secondary);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  margin-top: 0.15rem;
+}
+
+.action-summary-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.action-summary-item {
+  border-left: 3px solid #cfe1d5;
+  padding-left: 0.7rem;
+}
+
+.action-summary-item span,
+.action-summary-item strong {
+  display: block;
+}
+
+.action-summary-item span {
+  color: #64756a;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.action-summary-item strong {
+  color: var(--text-color);
+  font-size: 0.84rem;
+  line-height: 1.35;
+  margin-top: 0.12rem;
+}
+
+.action-summary-item.success {
+  border-left-color: #16794a;
+}
+
+.action-summary-item.warning {
+  border-left-color: #c99213;
+}
+
+.action-summary-item.warning strong {
+  color: #8a5a00;
+}
+
 .resource-form footer {
   display: flex;
   gap: 0.75rem;
@@ -161,12 +364,27 @@
 :host ::ng-deep .resource-form .p-inputnumber,
 :host ::ng-deep .resource-form .p-calendar,
 :host ::ng-deep .resource-form .p-select,
+:host ::ng-deep .resource-form .p-multiselect,
+:host ::ng-deep .transaction-filter-grid .p-select,
+:host ::ng-deep .transaction-filter-grid .p-calendar,
 :host ::ng-deep .resource-form .p-inputtextarea {
   width: 100%;
 }
 
+@media (max-width: 1280px) {
+  .transaction-filter-grid {
+    grid-template-columns: repeat(3, minmax(10rem, 1fr));
+  }
+
+  .filter-actions {
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width: 760px) {
-  .resource-form {
+  .resource-form,
+  .form-section,
+  .transaction-filter-grid {
     grid-template-columns: 1fr;
   }
 

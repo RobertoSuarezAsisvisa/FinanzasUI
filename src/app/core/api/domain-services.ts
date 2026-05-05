@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, catchError, forkJoin, of } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of } from 'rxjs';
 
 import {
   Account,
@@ -17,6 +17,7 @@ import {
   FinanceOverviewSummary,
   GoalContribution,
   Id,
+  PagedResult,
   PurchaseGoal,
   PurchaseGoalSummary,
   RecurringRule,
@@ -211,7 +212,10 @@ export class DashboardService {
       overview: this.reports.financeOverview().pipe(catchError(() => of(null))),
       accounts: this.api.get<AccountSummary[]>('accounts').pipe(catchError(() => of([]))),
       categories: this.api.get<Category[]>('categories').pipe(catchError(() => of([]))),
-      transactions: this.api.get<TransactionSummary[]>('transactions').pipe(catchError(() => of([]))),
+      transactions: this.api.get<PagedResult<TransactionSummary>>('transactions', { page: 1, pageSize: 100 }).pipe(
+        map((response) => response.items),
+        catchError(() => of([]))
+      ),
       budgets: this.api.get<BudgetSummary[]>('budgets').pipe(catchError(() => of([]))),
       savingGoals: this.api.get<SavingGoalSummary[]>('saving-goals').pipe(catchError(() => of([]))),
       purchaseGoals: this.api.get<PurchaseGoalSummary[]>('purchase-goals').pipe(catchError(() => of([]))),
