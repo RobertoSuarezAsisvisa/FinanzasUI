@@ -212,7 +212,7 @@ export class DashboardService {
       overview: this.reports.financeOverview().pipe(catchError(() => of(null))),
       accounts: this.api.get<AccountSummary[]>('accounts').pipe(catchError(() => of([]))),
       categories: this.api.get<Category[]>('categories').pipe(catchError(() => of([]))),
-      transactions: this.api.get<PagedResult<TransactionSummary>>('transactions', { page: 1, pageSize: 100 }).pipe(
+      transactions: this.api.get<PagedResult<TransactionSummary>>('transactions', { page: 1, pageSize: 1000 }).pipe(
         map((response) => response.items),
         catchError(() => of([]))
       ),

@@ -163,7 +163,7 @@
 .metrics-grid {
   display: grid;
   gap: 0.8rem;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   margin-bottom: 1rem;
 }
 
@@ -258,7 +258,7 @@
 .bi-metrics {
   display: grid;
   gap: 0.8rem;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
   margin-bottom: 1rem;
 }
 
@@ -347,6 +347,11 @@
   gap: 1rem;
   justify-content: space-between;
   margin-bottom: 0.85rem;
+}
+
+.mini-head .p-button {
+  flex: 0 0 auto;
+  margin-top: -0.35rem;
 }
 
 .mini-head strong {
@@ -470,6 +475,63 @@
   color: var(--dash-muted);
   font-size: 0.76rem;
   line-height: 1.3;
+}
+
+.modal-bar {
+  background: #e8eee9;
+  border-radius: 999px;
+  height: 0.45rem;
+  min-width: 10rem;
+  overflow: hidden;
+}
+
+.modal-bar span {
+  background: linear-gradient(90deg, var(--dash-red), #e6aaa7);
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+}
+
+.budget-detail-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.budget-detail-card {
+  border: 1px solid var(--dash-border);
+  border-radius: 0.65rem;
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.9rem;
+}
+
+.budget-detail-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.budget-detail-head strong,
+.budget-detail-head span {
+  display: block;
+}
+
+.budget-detail-head > strong {
+  color: var(--dash-ink);
+  flex: 0 0 auto;
+}
+
+.budget-detail-head span,
+.budget-detail-card small {
+  color: var(--dash-muted);
+  font-size: 0.82rem;
+}
+
+:host ::ng-deep .budget-transactions-table .p-datatable-thead > tr > th,
+:host ::ng-deep .budget-transactions-table .p-datatable-tbody > tr > td {
+  font-size: 0.82rem;
+  padding: 0.55rem 0.65rem;
 }
 
 .summary-grid {

@@ -94,7 +94,7 @@
         <article class="dashboard-card bi-card">
           <div class="mini-head">
             <span>Gasto por categoria</span>
-            <strong>Top {{ expenseByCategory().length }}</strong>
+            <button pButton type="button" label="Ver más" icon="pi pi-list" text size="small" (click)="categoriesDialogVisible = true"></button>
           </div>
           <div class="bar-list" *ngIf="expenseByCategory().length; else emptyBiCategories">
             <div class="bar-row" *ngFor="let item of expenseByCategory()" [pTooltip]="barTooltip(item)" tooltipPosition="top">
@@ -132,7 +132,7 @@
         <article class="dashboard-card bi-card">
           <div class="mini-head">
             <span>Uso de presupuestos</span>
-            <strong>{{ activeBudgets() }} activos</strong>
+            <button pButton type="button" label="Ver más" icon="pi pi-list" text size="small" (click)="budgetsDialogVisible = true"></button>
           </div>
           <div class="budget-usage" *ngIf="budgetUsage().length; else emptyBiBudgets">
             <div class="budget-row" *ngFor="let budget of budgetUsage()" [pTooltip]="budgetTooltip(budget)" tooltipPosition="top">
@@ -257,8 +257,16 @@
             <strong>{{ activeAccounts() }}</strong>
           </div>
           <div pTooltip="Suma del balance actual de todas las cuentas registradas." tooltipPosition="top">
-            <span>Balance</span>
+            <span>Activos</span>
             <strong>{{ totalAccountBalance() | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+          </div>
+          <div pTooltip="Suma de cuentas marcadas como disponibles para gasto." tooltipPosition="top">
+            <span>Disponible</span>
+            <strong>{{ spendingBalance() | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+          </div>
+          <div pTooltip="Suma de cuentas marcadas como ahorro." tooltipPosition="top">
+            <span>Ahorro</span>
+            <strong>{{ savingsBalance() | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
           </div>
         </div>
 
@@ -267,7 +275,7 @@
             <article class="entity-row" *ngFor="let account of topAccounts()" [pTooltip]="account.name + ': representa ' + (account.share | number: '1.0-0') + '% del balance total.'" tooltipPosition="top">
               <div class="entity-copy">
                 <strong>{{ account.name }}</strong>
-                <span>{{ account.accountType }} / {{ account.currency }}</span>
+                <span>{{ account.accountType }} / {{ accountPurposeLabel(account.purpose) }} / {{ account.currency }}</span>
               </div>
               <div class="entity-meta">
                 <app-money-cell [value]="account.balance" [currency]="account.currency"></app-money-cell>
@@ -410,6 +418,10 @@
           <span>Entradas</span>
           <strong>{{ activeDebts() }}</strong>
         </div>
+        <div pTooltip="Suma de saldos pendientes que otras personas te deben." tooltipPosition="top">
+          <span>Por cobrar</span>
+          <strong>{{ receivableTotal() | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
+        </div>
       </div>
 
       <ng-container *ngIf="topDebts().length; else emptyDebts">
@@ -481,4 +493,81 @@
       <span>Cargando datos financieros...</span>
     </section>
   </ng-template>
+
+  <p-dialog
+    [(visible)]="categoriesDialogVisible"
+    [modal]="true"
+    [draggable]="false"
+    [style]="{ width: 'min(760px, 94vw)' }"
+    header="Gastos por categoría"
+  >
+    <p-table [value]="allExpenseByCategory()" responsiveLayout="scroll">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Categoría</th>
+          <th>Monto</th>
+          <th>Concentración</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td>{{ item.label }}</td>
+          <td>{{ item.value | currency: 'USD' : 'symbol' : '1.0-2' }}</td>
+          <td>
+            <div class="modal-bar"><span [style.width.%]="item.percent"></span></div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="3">Sin gastos categorizados.</td></tr>
+      </ng-template>
+    </p-table>
+  </p-dialog>
+
+  <p-dialog
+    [(visible)]="budgetsDialogVisible"
+    [modal]="true"
+    [draggable]="false"
+    [style]="{ width: 'min(980px, 94vw)' }"
+    header="Detalle de presupuestos"
+  >
+    <div class="budget-detail-list" *ngIf="allBudgetUsage().length; else emptyBudgetModal">
+      <article class="budget-detail-card" *ngFor="let budget of allBudgetUsage()">
+        <div class="budget-detail-head">
+          <div>
+            <strong>{{ budget.name }}</strong>
+            <span>{{ budget.periodType }} · {{ budget.transactions.length }} transacciones</span>
+          </div>
+          <strong>{{ budget.spent | currency: 'USD' : 'symbol' : '1.0-2' }} / {{ budget.limit | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+        </div>
+        <p-progressBar [value]="budget.percent" [showValue]="false"></p-progressBar>
+        <small>{{ budget.percent | number: '1.0-0' }}% usado · queda {{ budget.remaining | currency: 'USD' : 'symbol' : '1.0-2' }}</small>
+
+        <p-table [value]="budget.transactions" responsiveLayout="scroll" styleClass="budget-transactions-table">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Fecha</th>
+              <th>Descripción</th>
+              <th>Cuenta</th>
+              <th>Monto</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-transaction>
+            <tr>
+              <td>{{ transaction.transactionDate | date: 'short' }}</td>
+              <td>{{ transaction.description || '-' }}</td>
+              <td>{{ accountName(transaction.accountId) }}</td>
+              <td>{{ transaction.amount | currency: transaction.currency : 'symbol' : '1.0-2' }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="4">Sin transacciones para este presupuesto.</td></tr>
+          </ng-template>
+        </p-table>
+      </article>
+    </div>
+    <ng-template #emptyBudgetModal>
+      <div class="empty-state inline"><i class="pi pi-chart-pie"></i><span>Sin presupuestos activos.</span></div>
+    </ng-template>
+  </p-dialog>
 </div>

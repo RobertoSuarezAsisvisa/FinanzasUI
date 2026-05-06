@@ -5,6 +5,12 @@ export interface ResourceOption {
   value: string;
   balance?: number;
   currency?: string;
+  categoryId?: string;
+  limitAmount?: number;
+  periodType?: string;
+  validityType?: string;
+  periodStart?: string | null;
+  periodEnd?: string | null;
 }
 
 export interface ResourceField {
@@ -18,6 +24,7 @@ export interface ResourceField {
   table?: boolean;
   showTime?: boolean;
   defaultNow?: boolean;
+  defaultValue?: unknown;
   visibleWhen?: {
     key: string;
     value: unknown;

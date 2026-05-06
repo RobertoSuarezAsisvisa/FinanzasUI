@@ -187,6 +187,75 @@
   background: #fcfdfc;
 }
 
+.transaction-section .field-control:has(textarea) {
+  grid-column: 1 / -1;
+}
+
+.transaction-detail-section {
+  grid-template-columns: 1fr;
+}
+
+.transaction-detail-section .field-control {
+  width: 100%;
+}
+
+.transaction-detail-section .resource-textarea {
+  min-height: 7rem;
+}
+
+.budget-preview {
+  background: #f7fbf8;
+  border: 1px solid #cfe1d5;
+  border-radius: 0.65rem;
+  display: grid;
+  gap: 0.65rem;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 0.85rem;
+}
+
+.budget-preview div {
+  min-width: 0;
+}
+
+.budget-preview span,
+.budget-preview small {
+  color: #64756a;
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.budget-preview strong {
+  color: var(--text-color);
+  display: block;
+  font-size: 0.92rem;
+  margin-top: 0.18rem;
+  overflow-wrap: anywhere;
+}
+
+.budget-preview .warning {
+  color: #b45309;
+}
+
+.budget-preview p-progressbar,
+.budget-preview small {
+  grid-column: 1 / -1;
+}
+
+.create-option-empty {
+  align-items: stretch;
+  color: var(--text-color-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.85rem;
+}
+
+.create-option-empty span {
+  font-size: 0.84rem;
+}
+
 .crypto-section {
   background:
     linear-gradient(90deg, rgba(22, 121, 74, 0.07), transparent 38%),
@@ -367,7 +436,10 @@
 :host ::ng-deep .resource-form .p-multiselect,
 :host ::ng-deep .transaction-filter-grid .p-select,
 :host ::ng-deep .transaction-filter-grid .p-calendar,
-:host ::ng-deep .resource-form .p-inputtextarea {
+:host ::ng-deep .resource-form .p-textarea,
+:host ::ng-deep .resource-form .resource-textarea {
+  box-sizing: border-box;
+  resize: vertical;
   width: 100%;
 }
 

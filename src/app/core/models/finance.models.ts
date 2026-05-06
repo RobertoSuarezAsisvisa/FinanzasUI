@@ -2,6 +2,7 @@ export type Id = string;
 
 export type TransactionType = 'Income' | 'Expense' | 'Transfer';
 export type AccountType = 'Bank' | 'Cash' | 'DigitalWallet' | 'Crypto' | string;
+export type AccountPurpose = 'Spending' | 'Savings' | 'Investment' | 'Reserved' | string;
 export type GoalStatus = 'InProgress' | 'Saving' | 'Completed' | 'Cancelled' | string;
 export type DebtType = 'Payable' | 'Receivable';
 export type DebtStatus = 'Active' | 'Paid' | 'Cancelled' | string;
@@ -13,6 +14,7 @@ export interface Account {
   name: string;
   accountType: AccountType;
   currency: string;
+  purpose?: AccountPurpose;
   balance?: number;
   bankName?: string | null;
   accountNumber?: string | null;
@@ -47,6 +49,7 @@ export interface Transaction {
   accountId: Id;
   toAccountId?: Id | null;
   categoryId?: Id | null;
+  budgetId?: Id | null;
   description?: string | null;
   reference?: string | null;
   transactionDate: string;
@@ -57,7 +60,7 @@ export interface Transaction {
 export interface Budget {
   id?: Id;
   name: string;
-  categoryId: Id;
+  categoryId?: Id | null;
   limitAmount: number;
   periodType: string;
   validityType: string;
@@ -154,7 +157,7 @@ export interface RecurringRule {
   type: TransactionType;
   amount: number;
   accountId: Id;
-  categoryId: Id;
+  categoryId?: Id | null;
   frequency: Frequency;
   startDate: string;
   endDate?: string | null;
@@ -184,6 +187,7 @@ export interface AccountSummary {
   name: string;
   accountType: AccountType;
   currency: string;
+  purpose?: AccountPurpose;
   balance: number;
   isActive: boolean;
   bankName?: string | null;
@@ -203,6 +207,7 @@ export interface TransactionSummary {
   accountId: Id;
   toAccountId?: Id | null;
   categoryId?: Id | null;
+  budgetId?: Id | null;
   description?: string | null;
   reference?: string | null;
   transactionDate: string;
@@ -219,7 +224,7 @@ export interface PagedResult<T> {
 export interface BudgetSummary {
   id: Id;
   name: string;
-  categoryId: Id;
+  categoryId?: Id | null;
   limitAmount: number;
   periodType: string;
   validityType: string;

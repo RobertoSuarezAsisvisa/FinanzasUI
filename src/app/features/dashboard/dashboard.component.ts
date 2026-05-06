@@ -1,10 +1,12 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
 import { PanelModule } from 'primeng/panel';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TagModule } from 'primeng/tag';
+import { TableModule } from 'primeng/table';
 import { TooltipModule } from 'primeng/tooltip';
 import { finalize } from 'rxjs';
 
@@ -46,6 +48,7 @@ interface AccountTile {
   id: string;
   name: string;
   accountType: string;
+  purpose: string;
   currency: string;
   balance: number;
   share: number;
@@ -112,12 +115,15 @@ interface BiSlice {
 }
 
 interface BudgetUsage {
+  id: string;
+  categoryId?: string | null;
   name: string;
   limit: number;
   spent: number;
   percent: number;
   remaining: number;
   periodType: string;
+  transactions: TransactionSummary[];
 }
 
 interface DashboardState {
@@ -140,12 +146,14 @@ interface DashboardState {
     PageHeaderComponent,
     MoneyCellComponent,
     ButtonModule,
+    DialogModule,
     CurrencyPipe,
     DatePipe,
     PanelModule,
     ProgressBarModule,
     ProgressSpinnerModule,
     TagModule,
+    TableModule,
     TooltipModule
   ],
   templateUrl: './dashboard.component.html',
@@ -153,6 +161,8 @@ interface DashboardState {
 })
 export class DashboardComponent implements OnInit {
   loading = signal(true);
+  categoriesDialogVisible = false;
+  budgetsDialogVisible = false;
   healthOk = signal(false);
   lastRefreshed = signal<Date | null>(null);
   state = signal<DashboardState | null>(null);
@@ -172,7 +182,12 @@ export class DashboardComponent implements OnInit {
   currentPeriodName = computed(() => this.currentPeriod()?.name ?? 'Sin periodo abierto');
   totalIncome = computed(() => this.sumTransactions(this.transactions(), 'Income'));
   totalExpenses = computed(() => this.sumTransactions(this.transactions(), 'Expense'));
-  totalAccountBalance = computed(() => this.sum(this.accounts(), 'balance'));
+  activeAccountList = computed(() => this.accounts().filter((account) => account.isActive));
+  totalAccountBalance = computed(() => this.sum(this.activeAccountList(), 'balance'));
+  spendingBalance = computed(() => this.sum(this.activeAccountList().filter((account) => this.accountPurpose(account) === 'Spending'), 'balance'));
+  savingsBalance = computed(() => this.sum(this.activeAccountList().filter((account) => this.accountPurpose(account) === 'Savings'), 'balance'));
+  investmentBalance = computed(() => this.sum(this.activeAccountList().filter((account) => this.accountPurpose(account) === 'Investment'), 'balance'));
+  reservedBalance = computed(() => this.sum(this.activeAccountList().filter((account) => this.accountPurpose(account) === 'Reserved'), 'balance'));
   activeAccounts = computed(() => this.accounts().filter((account) => account.isActive).length);
   activeBudgets = computed(() => this.budgets().filter((budget) => budget.isActive).length);
   totalBudgetLimit = computed(() => this.sum(this.budgets(), 'limitAmount'));
@@ -248,10 +263,12 @@ export class DashboardComponent implements OnInit {
   );
   flowChart = computed(() => this.buildFlowChart(this.transactions()));
   transactionMix = computed(() => this.buildTransactionMix(this.transactions()));
-  expenseByCategory = computed(() => this.buildExpenseByCategory(this.transactions()));
+  expenseByCategory = computed(() => this.allExpenseByCategory().slice(0, 5));
+  allExpenseByCategory = computed(() => this.buildExpenseByCategory(this.transactions()));
   expenseByAccount = computed(() => this.buildExpenseByAccount(this.transactions()));
   debtExposure = computed(() => this.buildDebtExposure(this.debts()));
-  budgetUsage = computed(() => this.buildBudgetUsage());
+  budgetUsage = computed(() => this.allBudgetUsage().slice(0, 3));
+  allBudgetUsage = computed(() => this.buildBudgetUsage());
   biMetrics = computed<BiMetric[]>(() => {
     const transfers = this.transactions().filter((transaction) => transaction.type === 'Transfer').length;
     const monthlyNeed = [...this.savingGoals(), ...this.purchaseGoals()].reduce(
@@ -282,9 +299,16 @@ export class DashboardComponent implements OnInit {
         tooltip: 'Suma de los aportes mensuales sugeridos para tus metas de ahorro y compra.'
       },
       {
-        label: 'Deuda por pagar',
+        label: 'Por cobrar',
+        value: this.formatAmount(this.receivableTotal(), 'USD'),
+        detail: 'Dinero que te deben',
+        tone: 'income',
+        tooltip: 'Suma de deudas activas de tipo por cobrar. Representa dinero pendiente de recibir.'
+      },
+      {
+        label: 'Por pagar',
         value: this.formatAmount(this.payableTotal(), 'USD'),
-        detail: `${this.activeDebts()} deudas por pagar activas`,
+        detail: `${this.activeDebts()} deudas activas`,
         tone: 'debt',
         tooltip: 'Suma de saldos pendientes solo en deudas por pagar activas. No incluye valores por cobrar.'
       }
@@ -315,12 +339,20 @@ export class DashboardComponent implements OnInit {
 
     return [
       {
-        label: 'Activos',
+        label: 'Activos totales',
         value: summary.totalAssets,
         icon: 'pi pi-wallet',
         money: true,
         tone: 'asset',
-        tooltip: 'Suma del balance actual de todas tus cuentas registradas.'
+        tooltip: 'Suma del balance actual de todas tus cuentas activas: disponible, ahorro, inversion y reservado.'
+      },
+      {
+        label: 'Disponible',
+        value: this.spendingBalance(),
+        icon: 'pi pi-wallet',
+        money: true,
+        tone: 'income',
+        tooltip: 'Dinero disponible para gastar. Incluye solo cuentas activas marcadas con uso Spending.'
       },
       {
         label: 'Ingresos',
@@ -355,7 +387,7 @@ export class DashboardComponent implements OnInit {
         tooltip: 'Cantidad de metas de ahorro y metas de compra registradas.'
       },
       {
-        label: 'Deuda por pagar',
+        label: 'Por pagar',
         value: summary.totalDebts,
         icon: 'pi pi-credit-card',
         money: true,
@@ -482,7 +514,18 @@ export class DashboardComponent implements OnInit {
   }
 
   budgetTooltip(budget: BudgetUsage): string {
-    return `${budget.name}: ${this.formatAmount(budget.spent, 'USD')} usados de ${this.formatAmount(budget.limit, 'USD')}. Queda ${this.formatAmount(budget.remaining, 'USD')}.`;
+    return `${budget.name}: ${this.formatAmount(budget.spent, 'USD')} usados de ${this.formatAmount(budget.limit, 'USD')}. Queda ${this.formatAmount(budget.remaining, 'USD')}. ${budget.transactions.length} transacciones.`;
+  }
+
+  accountPurposeLabel(purpose: string): string {
+    const labels: Record<string, string> = {
+      Spending: 'Disponible',
+      Savings: 'Ahorro',
+      Investment: 'Inversion',
+      Reserved: 'Reservada'
+    };
+
+    return labels[purpose] ?? purpose;
   }
 
   goalSummaryTooltip(): string {
@@ -556,6 +599,7 @@ export class DashboardComponent implements OnInit {
       id: String(account.id),
       name: account.name,
       accountType: account.accountType,
+      purpose: this.accountPurpose(account),
       currency: account.currency,
       balance: account.balance,
       share: Math.min(100, Math.max(0, share)),
@@ -710,7 +754,7 @@ export class DashboardComponent implements OnInit {
       totals.set(label, (totals.get(label) ?? 0) + transaction.amount);
     });
 
-    return this.toBars([...totals.entries()].map(([label, value]) => ({ label, value })), 5);
+    return this.toBars([...totals.entries()].map(([label, value]) => ({ label, value })), 999);
   }
 
   private buildExpenseByAccount(transactions: TransactionSummary[]): BiBar[] {
@@ -741,21 +785,67 @@ export class DashboardComponent implements OnInit {
     return this.budgets()
       .filter((budget) => budget.isActive)
       .map((budget) => {
-        const spent = this.transactions()
-          .filter((transaction) => transaction.type === 'Expense' && transaction.categoryId === budget.categoryId)
-          .reduce((total, transaction) => total + transaction.amount, 0);
+        const budgetTransactions = this.transactions()
+          .filter((transaction) => transaction.type === 'Expense')
+          .filter((transaction) => this.transactionMatchesBudget(transaction, budget));
+        const spent = budgetTransactions.reduce((total, transaction) => total + transaction.amount, 0);
 
         return {
           name: budget.name,
+          id: String(budget.id),
+          categoryId: budget.categoryId ?? null,
           limit: budget.limitAmount,
           spent,
           percent: budget.limitAmount > 0 ? Math.min(100, (spent / budget.limitAmount) * 100) : 0,
           remaining: Math.max(0, budget.limitAmount - spent),
-          periodType: budget.periodType
+          periodType: budget.periodType,
+          transactions: budgetTransactions
         };
       })
-      .sort((a, b) => b.percent - a.percent)
-      .slice(0, 4);
+      .sort((a, b) => b.percent - a.percent);
+  }
+
+  private accountPurpose(account: AccountSummary): string {
+    const explicitPurpose = account.purpose;
+    if (explicitPurpose) {
+      return explicitPurpose;
+    }
+
+    const name = account.name.toLocaleLowerCase();
+    if (name.includes('ahorro') || name.includes('emergencia')) {
+      return 'Savings';
+    }
+
+    if (account.accountType === 'Crypto') {
+      return 'Investment';
+    }
+
+    return 'Spending';
+  }
+
+  private transactionMatchesBudget(transaction: TransactionSummary, budget: BudgetSummary): boolean {
+    if (transaction.budgetId !== budget.id) {
+      return false;
+    }
+
+    return this.isTransactionInsideBudgetPeriod(transaction, budget);
+  }
+
+  private isTransactionInsideBudgetPeriod(transaction: TransactionSummary, budget: BudgetSummary): boolean {
+    const date = new Date(transaction.transactionDate);
+    if (Number.isNaN(date.getTime())) {
+      return true;
+    }
+
+    if (budget.periodStart && date < new Date(budget.periodStart)) {
+      return false;
+    }
+
+    if (budget.periodEnd && date > new Date(budget.periodEnd)) {
+      return false;
+    }
+
+    return true;
   }
 
   private toBars(items: Array<{ label: string; value: number; tone?: string }>, limit: number): BiBar[] {
@@ -778,7 +868,7 @@ export class DashboardComponent implements OnInit {
     return expenses.reduce((total, transaction) => total + transaction.amount, 0) / expenses.length;
   }
 
-  private accountName(accountId?: string | null): string {
+  accountName(accountId?: string | null): string {
     return this.accounts().find((account) => account.id === accountId)?.name ?? 'Cuenta no identificada';
   }
 

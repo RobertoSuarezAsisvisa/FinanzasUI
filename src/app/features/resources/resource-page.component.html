@@ -218,7 +218,15 @@
     <ng-template #fieldInput let-field>
       <ng-container [ngSwitch]="field.type">
         <input *ngSwitchCase="'text'" pInputText [formControlName]="field.key" [placeholder]="field.placeholder || field.label" />
-        <textarea *ngSwitchCase="'textarea'" pTextarea rows="3" [formControlName]="field.key"></textarea>
+        <textarea
+          *ngSwitchCase="'textarea'"
+          pTextarea
+          [fluid]="true"
+          class="resource-textarea"
+          rows="3"
+          [formControlName]="field.key"
+          [placeholder]="field.placeholder || field.label"
+        ></textarea>
         <p-inputNumber *ngSwitchCase="'number'" [formControlName]="field.key" mode="decimal"></p-inputNumber>
         <p-inputNumber *ngSwitchCase="'currency'" [formControlName]="field.key" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
         <p-calendar
@@ -236,8 +244,47 @@
           optionValue="value"
           [formControlName]="field.key"
           appendTo="body"
+          [filter]="field.key === 'categoryId'"
+          filterPlaceholder="Buscar categoria"
+          [emptyFilterMessage]="selectEmptyMessage(field)"
+          [emptyMessage]="selectEmptyMessage(field)"
+          [fluid]="true"
+          [resetFilterOnHide]="field.key === 'categoryId'"
           [placeholder]="field.placeholder || field.label"
-        ></p-select>
+          (onChange)="onSelectFieldChange(field.key, $event.value)"
+          (onFilter)="field.key === 'categoryId' ? onCategoryFilter($event) : null"
+          (onHide)="field.key === 'categoryId' ? clearCategoryFilter() : null"
+        >
+          <ng-template *ngIf="field.key === 'categoryId'" pTemplate="emptyfilter">
+            <div class="create-option-empty">
+              <span>No existe "{{ normalizedCategoryFilter() }}".</span>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                label="Crear y seleccionar"
+                size="small"
+                [loading]="creatingCategory"
+                [disabled]="!canCreateCategoryFromFilter()"
+                (click)="createCategoryFromFilter()"
+              ></button>
+            </div>
+          </ng-template>
+          <ng-template *ngIf="field.key === 'categoryId'" pTemplate="footer">
+            <button
+              *ngIf="canCreateCategoryFromFilter()"
+              pButton
+              type="button"
+              icon="pi pi-plus"
+              [label]="'Crear categoria: ' + normalizedCategoryFilter()"
+              severity="secondary"
+              text
+              size="small"
+              [loading]="creatingCategory"
+              (click)="createCategoryFromFilter()"
+            ></button>
+          </ng-template>
+        </p-select>
         <p-colorPicker *ngSwitchCase="'color'" [formControlName]="field.key"></p-colorPicker>
         <p-toggleswitch *ngSwitchCase="'boolean'" [formControlName]="field.key" [ariaLabel]="field.label"></p-toggleswitch>
         <p-multiselect
@@ -248,9 +295,45 @@
           [formControlName]="field.key"
           appendTo="body"
           placeholder="Seleccionar"
+          filterPlaceHolder="Buscar tag"
+          [emptyFilterMessage]="field.key === 'tagIds' ? 'No existe ese tag.' : 'Sin resultados'"
           [filter]="true"
+          [fluid]="true"
+          [resetFilterOnHide]="true"
           display="chip"
-        ></p-multiselect>
+          (onFilter)="field.key === 'tagIds' ? onTagFilter($event) : null"
+          (onPanelHide)="field.key === 'tagIds' ? clearTagFilter() : null"
+        >
+          <ng-template *ngIf="field.key === 'tagIds'" pTemplate="emptyfilter">
+            <div class="create-option-empty">
+              <span>No existe "{{ normalizedTagFilter() }}".</span>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                label="Crear y seleccionar"
+                size="small"
+                [loading]="creatingTag"
+                [disabled]="!canCreateTagFromFilter()"
+                (click)="createTagFromFilter()"
+              ></button>
+            </div>
+          </ng-template>
+          <ng-template *ngIf="field.key === 'tagIds'" pTemplate="footer">
+            <button
+              *ngIf="canCreateTagFromFilter()"
+              pButton
+              type="button"
+              icon="pi pi-plus"
+              [label]="'Crear tag: ' + normalizedTagFilter()"
+              severity="secondary"
+              text
+              size="small"
+              [loading]="creatingTag"
+              (click)="createTagFromFilter()"
+            ></button>
+          </ng-template>
+        </p-multiselect>
         <input *ngSwitchCase="'tags'" pInputText [formControlName]="field.key" placeholder="tagId1, tagId2" />
       </ng-container>
     </ng-template>
@@ -345,14 +428,37 @@
             <ng-container *ngTemplateOutlet="fieldInput; context: { $implicit: field }"></ng-container>
             <small *ngIf="isInvalid(field)">Campo requerido o valor invalido.</small>
           </label>
+
+          <div class="budget-preview" *ngIf="selectedBudgetSummary() as budget">
+            <div>
+              <span>Presupuesto</span>
+              <strong>{{ budget.name }}</strong>
+            </div>
+            <div>
+              <span>Límite</span>
+              <strong>{{ budget.limit | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+            </div>
+            <div>
+              <span>Usado</span>
+              <strong>{{ budget.projectedSpent | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+            </div>
+            <div>
+              <span>Disponible</span>
+              <strong [class.warning]="budget.remaining < 0">{{ budget.remaining | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+            </div>
+            <p-progressBar [value]="budget.percent" [showValue]="false"></p-progressBar>
+            <small [class.warning]="budget.remaining < 0">
+              {{ budget.percent | number: '1.0-0' }}% usado después de guardar esta transacción.
+            </small>
+          </div>
         </section>
 
-        <section class="form-section transaction-section">
+        <section class="form-section transaction-section transaction-detail-section">
           <div class="form-section-head">
             <i class="pi pi-align-left"></i>
             <div>
               <strong>Detalle</strong>
-              <span>Descripcion, referencia, regla recurrente y etiquetas.</span>
+              <span>Descripcion clara del movimiento y etiquetas opcionales.</span>
             </div>
           </div>
 
@@ -403,7 +509,15 @@
         <span>{{ field.label }}</span>
         <ng-container [ngSwitch]="field.type">
           <input *ngSwitchCase="'text'" pInputText [formControlName]="field.key" />
-          <textarea *ngSwitchCase="'textarea'" pTextarea rows="3" [formControlName]="field.key"></textarea>
+          <textarea
+            *ngSwitchCase="'textarea'"
+            pTextarea
+            [fluid]="true"
+            class="resource-textarea"
+            rows="3"
+            [formControlName]="field.key"
+            [placeholder]="field.placeholder || field.label"
+          ></textarea>
           <p-select
             *ngSwitchCase="'select'"
             [options]="selectOptions(field)"
@@ -433,7 +547,7 @@
         <i class="pi pi-info-circle"></i>
         <div>
           <strong>Resumen antes de guardar</strong>
-          <span>Estas acciones se ejecutarán al registrar el aporte.</span>
+          <span>Estas acciones se ejecutarán al guardar el registro.</span>
         </div>
       </div>
 
