@@ -109,6 +109,11 @@ export interface Debt {
   accountId: Id;
   status?: DebtStatus;
   notes?: string | null;
+  interestRate?: number | null;
+  interestPeriod?: 'Monthly' | 'Annual' | string | null;
+  amortizationMethod?: 'French' | 'German' | string | null;
+  termMonths?: number | null;
+  loanStartDate?: string | null;
 }
 
 export interface DebtPayment {
@@ -117,6 +122,21 @@ export interface DebtPayment {
   paymentDate: string;
   notes?: string | null;
   transactionId?: Id | null;
+}
+
+export interface DebtInstallmentSummary {
+  id: Id;
+  debtId: Id;
+  number: number;
+  dueDate: string;
+  expectedPayment: number;
+  principal: number;
+  interest: number;
+  paidAmount: number;
+  pendingAmount: number;
+  balanceAfterPayment: number;
+  status: 'Paid' | 'Partial' | 'Overdue' | 'Pending' | string;
+  daysOverdue: number;
 }
 
 export interface CryptoAccount {
@@ -268,6 +288,11 @@ export interface DebtSummary {
   accountId?: Id | null;
   status: DebtStatus;
   notes?: string | null;
+  interestRate?: number | null;
+  interestPeriod?: 'Monthly' | 'Annual' | string | null;
+  amortizationMethod?: 'French' | 'German' | string | null;
+  termMonths?: number | null;
+  loanStartDate?: string | null;
 }
 
 export interface AccountingPeriodSummary {

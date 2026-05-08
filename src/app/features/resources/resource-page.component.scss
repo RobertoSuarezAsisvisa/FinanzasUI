@@ -17,6 +17,18 @@
   width: 100%;
 }
 
+.debt-filter-grid {
+  align-items: end;
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(4, minmax(9rem, 1fr)) minmax(14rem, 1.2fr) auto;
+  width: 100%;
+}
+
+.debt-filter-grid .field-control {
+  margin: 0;
+}
+
 .transaction-filter-grid .field-control {
   margin: 0;
 }
@@ -43,26 +55,317 @@
   overflow: hidden;
 }
 
-.child-card {
-  margin-top: 1rem;
+.saving-goals-overview {
+  background:
+    linear-gradient(90deg, rgba(22, 121, 74, 0.08), transparent 42%),
+    var(--surface-card);
+  border: 1px solid #cfe1d5;
+  border-radius: 0.65rem;
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 1rem;
   padding: 1rem;
 }
 
-.child-header {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
+.budget-education {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 1rem;
 }
 
-.child-header h2 {
-  font-size: 1.1rem;
-  margin: 0;
+.purchase-goals-context,
+.debt-context {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 1rem;
 }
 
-.child-header p {
+.purchase-goals-context article,
+.debt-context article {
+  align-items: flex-start;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-200);
+  border-radius: 0.65rem;
+  display: flex;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.95rem;
+}
+
+.purchase-goals-context i,
+.debt-context i {
+  align-items: center;
+  background: #eef7f1;
+  border: 1px solid #cfe1d5;
+  border-radius: 0.5rem;
+  color: #16794a;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 2.15rem;
+  justify-content: center;
+  width: 2.15rem;
+}
+
+.debt-context i {
+  background: #fff1f1;
+  border-color: #f0caca;
+  color: #c84f4f;
+}
+
+.purchase-goals-context strong,
+.purchase-goals-context span,
+.debt-context strong,
+.debt-context span {
+  display: block;
+}
+
+.purchase-goals-context strong,
+.debt-context strong {
+  color: var(--text-color);
+  font-size: 0.94rem;
+  line-height: 1.25;
+}
+
+.purchase-goals-context span,
+.debt-context span {
   color: var(--text-color-secondary);
-  margin: 0.2rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  margin-top: 0.25rem;
+}
+
+.budget-education article {
+  align-items: flex-start;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-200);
+  border-radius: 0.65rem;
+  display: flex;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.95rem;
+}
+
+.budget-education i {
+  align-items: center;
+  background: #eef7f1;
+  border: 1px solid #cfe1d5;
+  border-radius: 0.5rem;
+  color: #16794a;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 2.15rem;
+  justify-content: center;
+  width: 2.15rem;
+}
+
+.budget-education strong,
+.budget-education span {
+  display: block;
+}
+
+.budget-education strong {
+  color: var(--text-color);
+  font-size: 0.94rem;
+  line-height: 1.25;
+}
+
+.budget-education span {
+  color: var(--text-color-secondary);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  margin-top: 0.25rem;
+}
+
+.budget-overview {
+  background:
+    linear-gradient(90deg, rgba(37, 111, 144, 0.08), transparent 42%),
+    var(--surface-card);
+  border: 1px solid #cddfea;
+  border-radius: 0.65rem;
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.purchase-goals-overview,
+.debt-overview {
+  background:
+    linear-gradient(90deg, rgba(22, 121, 74, 0.08), transparent 42%),
+    var(--surface-card);
+  border: 1px solid #cfe1d5;
+  border-radius: 0.65rem;
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.debt-overview {
+  background:
+    linear-gradient(90deg, rgba(200, 79, 79, 0.08), transparent 42%),
+    var(--surface-card);
+  border-color: #f0caca;
+}
+
+.purchase-goal-kpi,
+.debt-kpi {
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid #dce8e0;
+  border-radius: 0.55rem;
+  min-width: 0;
+  padding: 0.85rem;
+}
+
+.debt-kpi {
+  border-color: #f0dada;
+}
+
+.purchase-goal-kpi span,
+.purchase-goal-kpi strong,
+.purchase-goal-kpi small,
+.debt-kpi span,
+.debt-kpi strong,
+.debt-kpi small {
+  display: block;
+  min-width: 0;
+}
+
+.purchase-goal-kpi span,
+.debt-kpi span {
+  color: var(--text-color-secondary);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.purchase-goal-kpi strong,
+.debt-kpi strong {
+  color: var(--text-color);
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  margin-top: 0.38rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.purchase-goal-kpi small,
+.debt-kpi small {
+  color: var(--text-color-secondary);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  margin-top: 0.28rem;
+}
+
+.purchase-goals-progress {
+  grid-column: 1 / -1;
+}
+
+.budget-kpi {
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid #dbe8ef;
+  border-radius: 0.55rem;
+  min-width: 0;
+  padding: 0.85rem;
+}
+
+.budget-kpi span,
+.budget-kpi strong,
+.budget-kpi small {
+  display: block;
+  min-width: 0;
+}
+
+.budget-kpi span {
+  color: var(--text-color-secondary);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.budget-kpi strong {
+  color: var(--text-color);
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  margin-top: 0.38rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.budget-kpi small {
+  color: var(--text-color-secondary);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  margin-top: 0.28rem;
+}
+
+.budget-overview-progress {
+  grid-column: 1 / -1;
+}
+
+.saving-goal-kpi {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid #dce8e0;
+  border-radius: 0.55rem;
+  min-width: 0;
+  padding: 0.85rem;
+}
+
+.saving-goal-kpi span,
+.saving-goal-kpi strong,
+.saving-goal-kpi small {
+  display: block;
+  min-width: 0;
+}
+
+.saving-goal-kpi span {
+  color: var(--text-color-secondary);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.saving-goal-kpi strong {
+  color: var(--text-color);
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  margin-top: 0.38rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saving-goal-kpi small {
+  color: var(--text-color-secondary);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  margin-top: 0.28rem;
+}
+
+.saving-goals-progress {
+  grid-column: 1 / -1;
+}
+
+.goal-progress-cell {
+  background: #e7f7ee;
+  border: 1px solid #bfe3cd;
+  border-radius: 999px;
+  color: #16794a;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 850;
+  line-height: 1;
+  padding: 0.38rem 0.55rem;
 }
 
 .actions-col {
@@ -124,6 +427,154 @@
 
 .empty-state.compact {
   padding: 1rem;
+}
+
+:host ::ng-deep .child-detail-dialog .p-dialog-header {
+  border-bottom: 1px solid var(--surface-200);
+  padding: 1rem 1.25rem;
+}
+
+:host ::ng-deep .child-detail-dialog .p-dialog-content {
+  padding: 0;
+}
+
+.child-drawer-title span,
+.child-drawer-title strong {
+  display: block;
+}
+
+.child-drawer-title span {
+  color: var(--text-color-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.child-drawer-title strong {
+  color: var(--text-color);
+  font-size: 1.08rem;
+  line-height: 1.2;
+  margin-top: 0.18rem;
+}
+
+.child-drawer-body {
+  display: grid;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+}
+
+.child-drawer-summary {
+  background:
+    linear-gradient(90deg, rgba(22, 121, 74, 0.08), transparent 42%),
+    #f7fbf8;
+  border: 1px solid #cfe1d5;
+  border-radius: 0.65rem;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0.9rem;
+}
+
+.child-drawer-summary div {
+  min-width: 0;
+}
+
+.child-drawer-summary span,
+.child-drawer-summary strong {
+  display: block;
+}
+
+.child-drawer-summary span {
+  color: var(--text-color-secondary);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.child-drawer-summary strong {
+  color: var(--text-color);
+  font-size: 0.98rem;
+  line-height: 1.25;
+  margin-top: 0.24rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.child-drawer-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+:host ::ng-deep .child-detail-table .p-datatable-wrapper {
+  border: 1px solid var(--surface-200);
+  border-radius: 0.55rem;
+  overflow-x: auto;
+}
+
+:host ::ng-deep .child-detail-table .p-datatable-table {
+  min-width: 46rem;
+}
+
+:host ::ng-deep .child-detail-table .p-datatable-thead > tr > th,
+:host ::ng-deep .child-detail-table .p-datatable-tbody > tr > td {
+  padding: 0.85rem 0.9rem;
+  vertical-align: middle;
+}
+
+:host ::ng-deep .child-detail-table .p-datatable-tbody > tr > td {
+  white-space: normal;
+}
+
+:host ::ng-deep .child-detail-table .p-datatable-tbody > tr > td:first-child,
+:host ::ng-deep .child-detail-table .p-datatable-tbody > tr > td:nth-child(2),
+:host ::ng-deep .child-detail-table .p-datatable-tbody > tr > td:nth-child(3) {
+  min-width: 9rem;
+}
+
+.installment-detail {
+  border-top: 1px solid var(--surface-200);
+  display: grid;
+  gap: 0.85rem;
+  padding-top: 0.95rem;
+}
+
+.installment-head {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.installment-head strong,
+.installment-head span {
+  display: block;
+}
+
+.installment-head strong {
+  color: var(--text-color);
+  font-size: 0.96rem;
+}
+
+.installment-head span {
+  color: var(--text-color-secondary);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  margin-top: 0.15rem;
+}
+
+:host ::ng-deep .installment-table .p-datatable-wrapper {
+  border: 1px solid var(--surface-200);
+  border-radius: 0.55rem;
+  max-height: 24rem;
+  overflow: auto;
+}
+
+:host ::ng-deep .installment-table .p-datatable-thead > tr > th,
+:host ::ng-deep .installment-table .p-datatable-tbody > tr > td {
+  font-size: 0.82rem;
+  padding: 0.62rem 0.7rem;
+  white-space: nowrap;
 }
 
 .resource-form {
@@ -241,6 +692,55 @@
 .budget-preview p-progressbar,
 .budget-preview small {
   grid-column: 1 / -1;
+}
+
+.amortization-preview {
+  background: #f7fbf8;
+  border: 1px solid #cfe1d5;
+  border-radius: 0.65rem;
+  display: grid;
+  gap: 0.85rem;
+  grid-column: 1 / -1;
+  padding: 0.95rem;
+}
+
+.amortization-head {
+  align-items: start;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(9rem, 0.75fr));
+}
+
+.amortization-head span,
+.amortization-head strong {
+  display: block;
+}
+
+.amortization-head span {
+  color: var(--text-color-secondary);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.amortization-head strong {
+  color: var(--text-color);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+  margin-top: 0.15rem;
+}
+
+:host ::ng-deep .amortization-table .p-datatable-wrapper {
+  border: 1px solid var(--surface-200);
+  border-radius: 0.5rem;
+  max-height: 22rem;
+  overflow: auto;
+}
+
+:host ::ng-deep .amortization-table .p-datatable-thead > tr > th,
+:host ::ng-deep .amortization-table .p-datatable-tbody > tr > td {
+  font-size: 0.82rem;
+  padding: 0.55rem 0.65rem;
 }
 
 .create-option-empty {
@@ -431,11 +931,13 @@
 
 :host ::ng-deep .resource-form .p-inputtext,
 :host ::ng-deep .resource-form .p-inputnumber,
-:host ::ng-deep .resource-form .p-calendar,
+:host ::ng-deep .resource-form .p-datepicker,
 :host ::ng-deep .resource-form .p-select,
 :host ::ng-deep .resource-form .p-multiselect,
 :host ::ng-deep .transaction-filter-grid .p-select,
-:host ::ng-deep .transaction-filter-grid .p-calendar,
+:host ::ng-deep .transaction-filter-grid .p-datepicker,
+:host ::ng-deep .debt-filter-grid .p-select,
+:host ::ng-deep .debt-filter-grid .p-inputnumber,
 :host ::ng-deep .resource-form .p-textarea,
 :host ::ng-deep .resource-form .resource-textarea {
   box-sizing: border-box;
@@ -448,21 +950,66 @@
     grid-template-columns: repeat(3, minmax(10rem, 1fr));
   }
 
+  .debt-filter-grid {
+    grid-template-columns: repeat(3, minmax(10rem, 1fr));
+  }
+
+  .saving-goals-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .budget-education {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-goals-context,
+  .debt-context {
+    grid-template-columns: 1fr;
+  }
+
+  .budget-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .purchase-goals-overview,
+  .debt-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .filter-actions {
     justify-content: flex-start;
   }
 }
 
 @media (max-width: 760px) {
+  :host ::ng-deep .child-detail-dialog {
+    width: 96vw !important;
+  }
+
   .resource-form,
   .form-section,
-  .transaction-filter-grid {
+  .transaction-filter-grid,
+  .debt-filter-grid,
+  .saving-goals-overview,
+  .budget-overview,
+  .purchase-goals-overview,
+  .debt-overview {
     grid-template-columns: 1fr;
   }
 
-  .child-header {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 1rem;
+  .child-drawer-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .child-drawer-actions {
+    justify-content: stretch;
+  }
+
+  .child-drawer-actions .p-button {
+    width: 100%;
+  }
+
+  .amortization-head {
+    grid-template-columns: 1fr;
   }
 }

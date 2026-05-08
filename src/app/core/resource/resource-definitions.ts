@@ -60,12 +60,15 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
   budgets: {
     key: 'budgets',
     title: 'Presupuestos',
-    subtitle: 'Limites por categoria y periodo.',
+    subtitle: 'Límites de gasto por periodo para controlar tus salidas.',
     icon: 'pi pi-chart-pie',
     path: 'budgets',
     fields: [
       { key: 'name', label: 'Nombre', type: 'text', required: true, table: true },
-      { key: 'limitAmount', label: 'Limite', type: 'currency', required: true, table: true },
+      { key: 'limitAmount', label: 'Límite', type: 'currency', required: true, table: true },
+      { key: 'usedAmount', label: 'Usado', type: 'currency', readonly: true, table: true },
+      { key: 'remainingAmount', label: 'Disponible', type: 'currency', readonly: true, table: true },
+      { key: 'usage', label: 'Uso', type: 'text', readonly: true, table: true },
       { key: 'periodType', label: 'Periodo', type: 'select', required: true, options: ['Monthly', 'Quarterly', 'Yearly'], table: true },
       { key: 'validityType', label: 'Vigencia', type: 'select', required: true, options: ['Indefinite', 'Fixed'], table: true },
       { key: 'periodStart', label: 'Inicio', type: 'date' },
@@ -107,6 +110,10 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
     fields: [
       { key: 'name', label: 'Nombre', type: 'text', required: true, table: true },
       { key: 'targetAmount', label: 'Meta', type: 'currency', required: true, table: true },
+      { key: 'currentAmount', label: 'Ahorrado', type: 'currency', readonly: true, table: true },
+      { key: 'remainingAmount', label: 'Faltante', type: 'currency', readonly: true, table: true },
+      { key: 'progress', label: 'Avance', type: 'text', readonly: true, table: true },
+      { key: 'suggestedMonthlyContribution', label: 'Aporte mensual', type: 'currency', readonly: true, table: true },
       { key: 'accountId', label: 'Cuenta asociada', type: 'select', required: true, table: true },
       { key: 'targetDate', label: 'Fecha objetivo', type: 'date', required: true, table: true },
       { key: 'status', label: 'Estado', type: 'select', options: ['InProgress', 'Completed', 'Cancelled'], table: true }
@@ -138,6 +145,10 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
     fields: [
       { key: 'name', label: 'Nombre', type: 'text', required: true, table: true },
       { key: 'targetPrice', label: 'Precio objetivo', type: 'currency', required: true, table: true },
+      { key: 'savedAmount', label: 'Ahorrado', type: 'currency', readonly: true, table: true },
+      { key: 'remainingAmount', label: 'Faltante', type: 'currency', readonly: true, table: true },
+      { key: 'progress', label: 'Avance', type: 'text', readonly: true, table: true },
+      { key: 'suggestedMonthlyContribution', label: 'Aporte mensual', type: 'currency', readonly: true, table: true },
       { key: 'description', label: 'Descripcion', type: 'textarea', table: true },
       { key: 'priority', label: 'Prioridad', type: 'number', table: true },
       { key: 'url', label: 'URL', type: 'text' },
@@ -175,10 +186,17 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
       { key: 'contactName', label: 'Contacto', type: 'text', required: true, table: true },
       { key: 'originalAmount', label: 'Monto original', type: 'currency', required: true, table: true },
       { key: 'remainingAmount', label: 'Pendiente', type: 'currency', required: true, table: true },
+      { key: 'paidAmount', label: 'Abonado', type: 'currency', readonly: true, table: true },
+      { key: 'progress', label: 'Avance', type: 'text', readonly: true, table: true },
       { key: 'currency', label: 'Moneda', type: 'select', required: true, options: ['USD', 'EUR'], table: true },
       { key: 'dueDate', label: 'Vence', type: 'date', required: true, table: true },
       { key: 'accountId', label: 'Cuenta asociada', type: 'select', required: true },
       { key: 'status', label: 'Estado', type: 'select', options: ['Active', 'Paid', 'Cancelled'], table: true },
+      { key: 'interestRate', label: 'Tasa de interés (%)', type: 'number' },
+      { key: 'interestPeriod', label: 'Periodicidad de interés', type: 'select', options: ['Monthly', 'Annual'] },
+      { key: 'amortizationMethod', label: 'Método de amortización', type: 'select', options: ['French', 'German'] },
+      { key: 'termMonths', label: 'Plazo en meses', type: 'number' },
+      { key: 'loanStartDate', label: 'Inicio del préstamo', type: 'date' },
       { key: 'notes', label: 'Notas', type: 'textarea' }
     ],
     children: [

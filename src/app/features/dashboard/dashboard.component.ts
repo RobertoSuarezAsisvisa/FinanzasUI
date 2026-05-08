@@ -1,5 +1,5 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { PanelModule } from 'primeng/panel';
@@ -98,6 +98,16 @@ interface BiMetric {
   tooltip: string;
 }
 
+interface OverviewCard {
+  label: string;
+  value: number;
+  detail: string;
+  icon: string;
+  money: boolean;
+  tone: string;
+  tooltip: string;
+}
+
 interface BiBar {
   label: string;
   value: number;
@@ -141,6 +151,7 @@ interface DashboardState {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     PageHeaderComponent,
@@ -217,7 +228,6 @@ export class DashboardComponent implements OnInit {
     this.accounts()
       .slice()
       .sort((a, b) => b.balance - a.balance)
-      .slice(0, 4)
       .map((account) => this.toAccountTile(account))
   );
   topBudgets = computed(() =>
@@ -334,21 +344,23 @@ export class DashboardComponent implements OnInit {
       purchaseGoalsProgress: this.averageProgress(this.purchaseGoals())
     };
   });
-  overviewCards = computed(() => {
+  overviewCards = computed<OverviewCard[]>(() => {
     const summary = this.financialSummary();
 
     return [
       {
         label: 'Activos totales',
         value: summary.totalAssets,
+        detail: `${this.activeAccounts()} cuentas activas`,
         icon: 'pi pi-wallet',
         money: true,
         tone: 'asset',
-        tooltip: 'Suma del balance actual de todas tus cuentas activas: disponible, ahorro, inversion y reservado.'
+        tooltip: 'Suma del balance actual de todas tus cuentas activas: disponible, ahorro, inversión y reservado.'
       },
       {
         label: 'Disponible',
         value: this.spendingBalance(),
+        detail: 'Para gasto diario',
         icon: 'pi pi-wallet',
         money: true,
         tone: 'income',
@@ -357,6 +369,7 @@ export class DashboardComponent implements OnInit {
       {
         label: 'Ingresos',
         value: summary.totalIncome,
+        detail: 'Entradas registradas',
         icon: 'pi pi-arrow-down-left',
         money: true,
         tone: 'income',
@@ -365,6 +378,7 @@ export class DashboardComponent implements OnInit {
       {
         label: 'Gastos',
         value: summary.totalExpenses,
+        detail: 'Salidas registradas',
         icon: 'pi pi-arrow-up-right',
         money: true,
         tone: 'expense',
@@ -373,14 +387,16 @@ export class DashboardComponent implements OnInit {
       {
         label: 'Neto',
         value: summary.netBalance,
+        detail: summary.netBalance >= 0 ? 'Balance positivo' : 'Requiere atención',
         icon: 'pi pi-chart-line',
         money: true,
         tone: summary.netBalance >= 0 ? 'income' : 'expense',
-        tooltip: 'Resultado de ingresos menos gastos. Un valor positivo indica superavit.'
+        tooltip: 'Resultado de ingresos menos gastos. Un valor positivo indica superávit.'
       },
       {
         label: 'Metas',
         value: this.totalGoals(),
+        detail: `${this.totalGoalProgress().toFixed(0)}% global completado`,
         icon: 'pi pi-flag',
         money: false,
         tone: 'goal',
@@ -389,6 +405,7 @@ export class DashboardComponent implements OnInit {
       {
         label: 'Por pagar',
         value: summary.totalDebts,
+        detail: `${this.activeDebts()} deudas activas`,
         icon: 'pi pi-credit-card',
         money: true,
         tone: 'debt',
@@ -502,7 +519,7 @@ export class DashboardComponent implements OnInit {
   }
 
   flowTooltip(): string {
-    return 'Evalua el ultimo punto del flujo mensual: compara ingresos contra gastos para indicar si el periodo esta positivo o requiere atencion.';
+    return 'Evalúa el último punto del flujo mensual: compara ingresos contra gastos para indicar si el periodo está positivo o requiere atención.';
   }
 
   mixTooltip(item: BiSlice): string {
@@ -521,7 +538,7 @@ export class DashboardComponent implements OnInit {
     const labels: Record<string, string> = {
       Spending: 'Disponible',
       Savings: 'Ahorro',
-      Investment: 'Inversion',
+      Investment: 'Inversión',
       Reserved: 'Reservada'
     };
 
@@ -560,14 +577,14 @@ export class DashboardComponent implements OnInit {
     const days = Math.ceil((due.getTime() - today.getTime()) / 86_400_000);
 
     if (days < 0) {
-      return `Vencio hace ${Math.abs(days)} dias`;
+      return `Venció hace ${Math.abs(days)} días`;
     }
 
     if (days === 0) {
       return 'Vence hoy';
     }
 
-    return `Faltan ${days} dias`;
+    return `Faltan ${days} días`;
   }
 
   goalAccountLabel(goal: GoalTile): string {
@@ -873,7 +890,7 @@ export class DashboardComponent implements OnInit {
   }
 
   private categoryName(categoryId?: string | null): string {
-    return this.categories().find((category) => category.id === categoryId)?.name ?? 'Sin categoria';
+    return this.categories().find((category) => category.id === categoryId)?.name ?? 'Sin categoría';
   }
 
   private transactionTypeLabel(type: string): string {

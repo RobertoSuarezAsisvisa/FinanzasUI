@@ -4,9 +4,9 @@ import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } 
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { CalendarModule } from 'primeng/calendar';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ColorPickerModule } from 'primeng/colorpicker';
+import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
@@ -29,6 +29,14 @@ import { StatusTagComponent } from '../../shared/status-tag/status-tag.component
 
 type Entity = Record<string, any>;
 type ActionSummaryItem = { label: string; value: string; severity?: 'default' | 'success' | 'warning' };
+type AmortizationRow = {
+  period: number;
+  date: Date;
+  payment: number;
+  principal: number;
+  interest: number;
+  balance: number;
+};
 
 @Component({
   selector: 'app-resource-page',
@@ -41,9 +49,9 @@ type ActionSummaryItem = { label: string; value: string; severity?: 'default' | 
     MoneyCellComponent,
     StatusTagComponent,
     ButtonModule,
-    CalendarModule,
     CheckboxModule,
     ColorPickerModule,
+    DatePickerModule,
     DialogModule,
     InputNumberModule,
     InputTextModule,
@@ -70,12 +78,15 @@ export class ResourcePageComponent implements OnInit {
   childLoading = signal(false);
   dialogVisible = false;
   childDialogVisible = false;
+  childDetailVisible = false;
   editingItem: Entity | null = null;
   editingChildItem: Entity | null = null;
   selectedParent: Entity | null = null;
   activeChild: ResourceChild | null = null;
   filterValue = '';
   transactionFilters: Entity = {};
+  debtFilters: Entity = {};
+  appliedDebtFilters = signal<Entity>({});
   transactionFirst = 0;
   transactionRows = 10;
   totalRecords = signal(0);
@@ -85,11 +96,13 @@ export class ResourcePageComponent implements OnInit {
   categoryFilterValue = '';
   creatingCategory = false;
   budgetTransactions: Entity[] = [];
+  debtInstallments = signal<Entity[]>([]);
   form = new FormGroup({});
   childForm = new FormGroup({});
 
   tableFields = computed(() => this.definition.fields.filter((field) => field.table));
   childTableFields = computed(() => this.activeChild?.fields.filter((field) => field.table) ?? []);
+  tableItems = computed(() => this.isDebtsResource() ? this.filteredDebtItems(this.appliedDebtFilters()) : this.items());
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -105,12 +118,16 @@ export class ResourcePageComponent implements OnInit {
       this.definition = data['resource'];
       this.selectedParent = null;
       this.activeChild = null;
+      this.childDetailVisible = false;
       this.filterValue = '';
       this.transactionFilters = {};
+      this.debtFilters = {};
+      this.appliedDebtFilters.set({});
       this.transactionFirst = 0;
       this.transactionRows = 10;
       this.totalRecords.set(0);
       this.dynamicOptions = {};
+      this.debtInstallments.set([]);
       this.applyTransactionStateFromUrl();
       this.buildForm();
       this.loadLookupOptions();
@@ -153,6 +170,9 @@ export class ResourcePageComponent implements OnInit {
         this.items.set(this.normalizeList(response));
         this.totalRecords.set(this.totalCount(response));
         this.loading.set(false);
+        if (this.isDebtsResource()) {
+          this.loadDebtInstallments();
+        }
       },
       error: (error) => this.fail(error, 'No se pudo cargar la informacion.', () => this.loading.set(false))
     });
@@ -222,6 +242,7 @@ export class ResourcePageComponent implements OnInit {
 
     this.selectedParent = item;
     this.activeChild = this.definition.children[0];
+    this.childDetailVisible = true;
     this.buildChildForm();
     this.loadChildren();
   }
@@ -306,6 +327,40 @@ export class ResourcePageComponent implements OnInit {
   }
 
   displayValue(item: Entity, field: ResourceField): unknown {
+    if (this.isSavingGoalsResource()) {
+      if (field.key === 'progress') {
+        return `${this.savingGoalProgress(item).toFixed(0)}%`;
+      }
+    }
+
+    if (this.isBudgetsResource()) {
+      if (field.key === 'usage') {
+        return `${this.budgetUsagePercent(item).toFixed(0)}%`;
+      }
+
+      if (field.key === 'periodType') {
+        return this.periodTypeLabel(String(item[field.key] ?? ''));
+      }
+
+      if (field.key === 'validityType') {
+        return this.validityTypeLabel(String(item[field.key] ?? ''));
+      }
+    }
+
+    if (this.isPurchaseGoalsResource() && field.key === 'progress') {
+      return `${this.purchaseGoalProgress(item).toFixed(0)}%`;
+    }
+
+    if (this.isDebtsResource()) {
+      if (field.key === 'progress') {
+        return `${this.debtProgress(item).toFixed(0)}%`;
+      }
+
+      if (field.key === 'type') {
+        return this.debtTypeLabel(String(item[field.key] ?? ''));
+      }
+    }
+
     const value = item[field.key];
 
     if (field.key === 'accountId' || field.key === 'toAccountId' || field.key === 'categoryId') {
@@ -327,6 +382,62 @@ export class ResourcePageComponent implements OnInit {
     }
 
     return value ?? '-';
+  }
+
+  tableCellValue(item: Entity, field: ResourceField): number | null {
+    if (this.isSavingGoalsResource()) {
+      if (field.key === 'remainingAmount') {
+        return this.savingGoalRemaining(item);
+      }
+
+      if (field.key === 'suggestedMonthlyContribution') {
+        return Number(item['suggestedMonthlyContribution'] ?? 0);
+      }
+    }
+
+    if (this.isBudgetsResource()) {
+      if (field.key === 'usedAmount') {
+        return this.budgetUsedAmount(item);
+      }
+
+      if (field.key === 'remainingAmount') {
+        return this.budgetRemainingAmount(item);
+      }
+    }
+
+    if (this.isPurchaseGoalsResource()) {
+      if (field.key === 'remainingAmount') {
+        return this.purchaseGoalRemaining(item);
+      }
+
+      if (field.key === 'suggestedMonthlyContribution') {
+        return Number(item['suggestedMonthlyContribution'] ?? 0);
+      }
+    }
+
+    if (this.isDebtsResource() && field.key === 'paidAmount') {
+      return this.debtPaidAmount(item);
+    }
+
+    const value = item[field.key];
+
+    return value === null || value === undefined || value === '' ? null : Number(value);
+  }
+
+  isSavingGoalProgressField(field: ResourceField): boolean {
+    return this.isSavingGoalsResource() && field.key === 'progress';
+  }
+
+  isBudgetUsageField(field: ResourceField): boolean {
+    return this.isBudgetsResource() && field.key === 'usage';
+  }
+
+  isPurchaseGoalProgressField(field: ResourceField): boolean {
+    return this.isPurchaseGoalsResource() && field.key === 'progress';
+  }
+
+  isDebtProgressField(field: ResourceField): boolean {
+    return this.isDebtsResource() && field.key === 'progress';
   }
 
   showCreate(): boolean {
@@ -391,6 +502,248 @@ export class ResourcePageComponent implements OnInit {
     return this.definition.key === 'savingGoals';
   }
 
+  isBudgetsResource(): boolean {
+    return this.definition.key === 'budgets';
+  }
+
+  isPurchaseGoalsResource(): boolean {
+    return this.definition.key === 'purchaseGoals';
+  }
+
+  isDebtsResource(): boolean {
+    return this.definition.key === 'debts';
+  }
+
+  savingGoalTargetTotal(): number {
+    return this.items().reduce((total, goal) => total + Number(goal['targetAmount'] ?? 0), 0);
+  }
+
+  savingGoalSavedTotal(): number {
+    return this.items().reduce((total, goal) => total + Number(goal['currentAmount'] ?? 0), 0);
+  }
+
+  savingGoalRemainingTotal(): number {
+    return Math.max(0, this.savingGoalTargetTotal() - this.savingGoalSavedTotal());
+  }
+
+  savingGoalMonthlyTotal(): number {
+    return this.items().reduce((total, goal) => total + Number(goal['suggestedMonthlyContribution'] ?? 0), 0);
+  }
+
+  savingGoalProgressTotal(): number {
+    const target = this.savingGoalTargetTotal();
+
+    return target > 0 ? Math.min(100, (this.savingGoalSavedTotal() / target) * 100) : 0;
+  }
+
+  nextSavingGoalName(): string {
+    return String(this.nextSavingGoal()?.['name'] ?? 'Sin metas');
+  }
+
+  nextSavingGoalDateLabel(): string {
+    const goal = this.nextSavingGoal();
+    const date = goal?.['targetDate'];
+
+    if (!date) {
+      return 'Sin fecha objetivo';
+    }
+
+    return new Intl.DateTimeFormat('es-EC', { dateStyle: 'medium' }).format(new Date(String(date)));
+  }
+
+  activeBudgetCount(): number {
+    return this.items().filter((budget) => budget['isActive'] !== false).length;
+  }
+
+  budgetLimitTotal(): number {
+    return this.activeBudgets().reduce((total, budget) => total + Number(budget['limitAmount'] ?? 0), 0);
+  }
+
+  budgetUsedTotal(): number {
+    return this.activeBudgets().reduce((total, budget) => total + this.budgetUsedAmount(budget), 0);
+  }
+
+  budgetRemainingTotal(): number {
+    return Math.max(0, this.budgetLimitTotal() - this.budgetUsedTotal());
+  }
+
+  budgetUsageTotal(): number {
+    const limit = this.budgetLimitTotal();
+
+    return limit > 0 ? Math.min(100, (this.budgetUsedTotal() / limit) * 100) : 0;
+  }
+
+  mostUsedBudgetLabel(): string {
+    const budget = this.activeBudgets()
+      .slice()
+      .sort((a, b) => this.budgetUsagePercent(b) - this.budgetUsagePercent(a))
+      .at(0);
+
+    if (!budget) {
+      return 'Sin presupuestos activos';
+    }
+
+    return `Mayor uso: ${budget['name']} (${this.budgetUsagePercent(budget).toFixed(0)}%)`;
+  }
+
+  purchaseGoalTargetTotal(): number {
+    return this.items().reduce((total, goal) => total + Number(goal['targetPrice'] ?? 0), 0);
+  }
+
+  purchaseGoalSavedTotal(): number {
+    return this.items().reduce((total, goal) => total + Number(goal['savedAmount'] ?? 0), 0);
+  }
+
+  purchaseGoalRemainingTotal(): number {
+    return Math.max(0, this.purchaseGoalTargetTotal() - this.purchaseGoalSavedTotal());
+  }
+
+  purchaseGoalMonthlyTotal(): number {
+    return this.items().reduce((total, goal) => total + Number(goal['suggestedMonthlyContribution'] ?? 0), 0);
+  }
+
+  purchaseGoalProgressTotal(): number {
+    const target = this.purchaseGoalTargetTotal();
+
+    return target > 0 ? Math.min(100, (this.purchaseGoalSavedTotal() / target) * 100) : 0;
+  }
+
+  topPurchaseGoalName(): string {
+    return String(this.topPurchaseGoal()?.['name'] ?? 'Sin metas');
+  }
+
+  topPurchaseGoalDateLabel(): string {
+    const goal = this.topPurchaseGoal();
+    const date = goal?.['targetDate'];
+
+    if (!date) {
+      return 'Sin fecha objetivo';
+    }
+
+    return new Intl.DateTimeFormat('es-EC', { dateStyle: 'medium' }).format(new Date(String(date)));
+  }
+
+  debtPayableTotal(): number {
+    return this.items()
+      .filter((debt) => debt['type'] === 'Payable' && debt['status'] === 'Active')
+      .reduce((total, debt) => total + Number(debt['remainingAmount'] ?? 0), 0);
+  }
+
+  debtReceivableTotal(): number {
+    return this.items()
+      .filter((debt) => debt['type'] === 'Receivable' && debt['status'] === 'Active')
+      .reduce((total, debt) => total + Number(debt['remainingAmount'] ?? 0), 0);
+  }
+
+  debtPaidTotal(): number {
+    return this.items().reduce((total, debt) => total + this.debtPaidAmount(debt), 0);
+  }
+
+  payableDebtPaidTotal(): number {
+    return this.items()
+      .filter((debt) => debt['type'] === 'Payable')
+      .reduce((total, debt) => total + this.debtPaidAmount(debt), 0);
+  }
+
+  receivableDebtCollectedTotal(): number {
+    return this.items()
+      .filter((debt) => debt['type'] === 'Receivable')
+      .reduce((total, debt) => total + this.debtPaidAmount(debt), 0);
+  }
+
+  activePayableDebtCount(): number {
+    return this.items().filter((debt) => debt['type'] === 'Payable' && debt['status'] === 'Active').length;
+  }
+
+  activeReceivableDebtCount(): number {
+    return this.items().filter((debt) => debt['type'] === 'Receivable' && debt['status'] === 'Active').length;
+  }
+
+  overdueDebtInstallments(): Entity[] {
+    return this.debtInstallments().filter((installment) => installment['status'] === 'Overdue');
+  }
+
+  overdueDebtAmount(): number {
+    return this.overdueDebtInstallments().reduce((total, installment) => total + Number(installment['pendingAmount'] ?? 0), 0);
+  }
+
+  overdueDebtCount(): number {
+    return this.overdueDebtInstallments().length;
+  }
+
+  debtInstallmentRows(): Entity[] {
+    if (!this.selectedParent) {
+      return [];
+    }
+
+    const debtId = this.itemId(this.selectedParent);
+    return this.debtInstallments().filter((installment) => String(installment['debtId']) === debtId);
+  }
+
+  debtAmortizationRows(): AmortizationRow[] {
+    if (!this.isDebtsResource()) {
+      return [];
+    }
+
+    const principal = Number(this.form.get('originalAmount')?.value ?? 0);
+    const interestRate = Number(this.form.get('interestRate')?.value ?? 0);
+    const termMonths = Math.floor(Number(this.form.get('termMonths')?.value ?? 0));
+    const method = String(this.form.get('amortizationMethod')?.value ?? '');
+    const interestPeriod = String(this.form.get('interestPeriod')?.value ?? 'Monthly');
+    const startValue: unknown = this.form.get('loanStartDate')?.value;
+    const startDate = startValue instanceof Date ? startValue : new Date();
+
+    if (principal <= 0 || termMonths <= 0 || !method || !interestPeriod) {
+      return [];
+    }
+
+    const monthlyRate = (interestRate / 100) / (interestPeriod === 'Annual' ? 12 : 1);
+    const rows: AmortizationRow[] = [];
+    const fixedPrincipal = principal / termMonths;
+    const frenchPayment = monthlyRate > 0
+      ? principal * (monthlyRate / (1 - Math.pow(1 + monthlyRate, -termMonths)))
+      : principal / termMonths;
+    let balance = principal;
+
+    for (let period = 1; period <= Math.min(termMonths, 480); period++) {
+      const interest = balance * monthlyRate;
+      const principalPayment = method === 'German' ? fixedPrincipal : frenchPayment - interest;
+      const payment = method === 'German' ? principalPayment + interest : frenchPayment;
+      balance = Math.max(0, balance - principalPayment);
+      const date = new Date(startDate);
+      date.setMonth(date.getMonth() + period - 1);
+
+      rows.push({
+        period,
+        date,
+        payment: this.roundMoney(payment),
+        principal: this.roundMoney(principalPayment),
+        interest: this.roundMoney(interest),
+        balance: this.roundMoney(balance)
+      });
+    }
+
+    return rows;
+  }
+
+  debtAmortizationMethodLabel(): string {
+    const method = String(this.form.get('amortizationMethod')?.value ?? '');
+    const labels: Record<string, string> = {
+      French: 'Método francés: cuota fija',
+      German: 'Método alemán: capital fijo'
+    };
+
+    return labels[method] ?? 'Método no definido';
+  }
+
+  debtAmortizationTotalPayment(): number {
+    return this.debtAmortizationRows().reduce((total, row) => total + row.payment, 0);
+  }
+
+  debtAmortizationTotalInterest(): number {
+    return this.debtAmortizationRows().reduce((total, row) => total + row.interest, 0);
+  }
+
   transactionCoreFields(): ResourceField[] {
     return this.transactionFields(['type', 'amount', 'currency', 'transactionDate']);
   }
@@ -445,6 +798,15 @@ export class ResourcePageComponent implements OnInit {
     this.transactionFilters = {};
     this.transactionFirst = 0;
     this.load();
+  }
+
+  clearDebtFilters(): void {
+    this.debtFilters = {};
+    this.appliedDebtFilters.set({});
+  }
+
+  applyDebtFilters(): void {
+    this.appliedDebtFilters.set({ ...this.debtFilters });
   }
 
   onTagFilter(event: { filter?: unknown }): void {
@@ -717,6 +1079,154 @@ export class ResourcePageComponent implements OnInit {
     return summary;
   }
 
+  private savingGoalRemaining(goal: Entity): number {
+    return Math.max(0, Number(goal['targetAmount'] ?? 0) - Number(goal['currentAmount'] ?? 0));
+  }
+
+  private savingGoalProgress(goal: Entity): number {
+    const target = Number(goal['targetAmount'] ?? 0);
+
+    return target > 0 ? Math.min(100, (Number(goal['currentAmount'] ?? 0) / target) * 100) : 0;
+  }
+
+  private nextSavingGoal(): Entity | null {
+    return this.items()
+      .filter((goal) => String(goal['status'] ?? '') !== 'Completed' && String(goal['status'] ?? '') !== 'Cancelled')
+      .slice()
+      .sort((a, b) => this.dateValue(a['targetDate']) - this.dateValue(b['targetDate']))
+      .at(0) ?? null;
+  }
+
+  private purchaseGoalRemaining(goal: Entity): number {
+    return Math.max(0, Number(goal['targetPrice'] ?? 0) - Number(goal['savedAmount'] ?? 0));
+  }
+
+  private purchaseGoalProgress(goal: Entity): number {
+    const target = Number(goal['targetPrice'] ?? 0);
+
+    return target > 0 ? Math.min(100, (Number(goal['savedAmount'] ?? 0) / target) * 100) : 0;
+  }
+
+  private topPurchaseGoal(): Entity | null {
+    return this.items()
+      .filter((goal) => String(goal['status'] ?? '') !== 'Completed' && String(goal['status'] ?? '') !== 'Cancelled')
+      .slice()
+      .sort((a, b) => Number(a['priority'] ?? 999) - Number(b['priority'] ?? 999) || this.dateValue(a['targetDate']) - this.dateValue(b['targetDate']))
+      .at(0) ?? null;
+  }
+
+  private debtPaidAmount(debt: Entity): number {
+    return Math.max(0, Number(debt['originalAmount'] ?? 0) - Number(debt['remainingAmount'] ?? 0));
+  }
+
+  private debtProgress(debt: Entity): number {
+    const original = Number(debt['originalAmount'] ?? 0);
+
+    return original > 0 ? Math.min(100, (this.debtPaidAmount(debt) / original) * 100) : 0;
+  }
+
+  private debtTypeLabel(value: string): string {
+    const labels: Record<string, string> = {
+      Payable: 'Por pagar',
+      Receivable: 'Por cobrar'
+    };
+
+    return labels[value] ?? (value || '-');
+  }
+
+  private roundMoney(value: number): number {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
+  }
+
+  private filteredDebtItems(filters: Entity): Entity[] {
+    const type = String(filters['type'] ?? '');
+    const status = String(filters['status'] ?? '');
+    const search = String(filters['search'] ?? '').trim().toLocaleLowerCase();
+    const minAmount = this.optionalNumber(filters['minAmount']);
+    const maxAmount = this.optionalNumber(filters['maxAmount']);
+
+    return this.items().filter((debt) => {
+      const remaining = Number(debt['remainingAmount'] ?? 0);
+      const text = `${debt['contactName'] ?? ''} ${debt['notes'] ?? ''}`.toLocaleLowerCase();
+
+      return (!type || debt['type'] === type)
+        && (!status || debt['status'] === status)
+        && (!search || text.includes(search))
+        && (minAmount === null || remaining >= minAmount)
+        && (maxAmount === null || remaining <= maxAmount);
+    });
+  }
+
+  private optionalNumber(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private activeBudgets(): Entity[] {
+    return this.items().filter((budget) => budget['isActive'] !== false);
+  }
+
+  private budgetUsedAmount(budget: Entity): number {
+    return this.budgetTransactions
+      .filter((transaction) => String(transaction['budgetId'] ?? '') === this.itemId(budget))
+      .filter((transaction) => this.isWithinBudgetPeriod(String(transaction['transactionDate'] ?? ''), this.budgetAsOption(budget)))
+      .reduce((total, transaction) => total + Number(transaction['amount'] ?? 0), 0);
+  }
+
+  private budgetRemainingAmount(budget: Entity): number {
+    return Math.max(0, Number(budget['limitAmount'] ?? 0) - this.budgetUsedAmount(budget));
+  }
+
+  private budgetUsagePercent(budget: Entity): number {
+    const limit = Number(budget['limitAmount'] ?? 0);
+
+    return limit > 0 ? Math.min(100, (this.budgetUsedAmount(budget) / limit) * 100) : 0;
+  }
+
+  private budgetAsOption(budget: Entity): ResourceOption {
+    return {
+      label: String(budget['name'] ?? ''),
+      value: this.itemId(budget),
+      limitAmount: Number(budget['limitAmount'] ?? 0),
+      periodType: String(budget['periodType'] ?? ''),
+      validityType: String(budget['validityType'] ?? ''),
+      periodStart: budget['periodStart'] ? String(budget['periodStart']) : null,
+      periodEnd: budget['periodEnd'] ? String(budget['periodEnd']) : null
+    };
+  }
+
+  private periodTypeLabel(value: string): string {
+    const labels: Record<string, string> = {
+      Monthly: 'Mensual',
+      Quarterly: 'Trimestral',
+      Yearly: 'Anual'
+    };
+
+    return labels[value] ?? (value || '-');
+  }
+
+  private validityTypeLabel(value: string): string {
+    const labels: Record<string, string> = {
+      Indefinite: 'Indefinida',
+      Fixed: 'Fija'
+    };
+
+    return labels[value] ?? (value || '-');
+  }
+
+  private dateValue(value: unknown): number {
+    if (!value) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    const parsed = new Date(String(value));
+    return Number.isNaN(parsed.getTime()) ? Number.MAX_SAFE_INTEGER : parsed.getTime();
+  }
+
   toggleAccountActive(item: Entity, checked: boolean): void {
     if (!this.isAccountsResource()) {
       return;
@@ -748,6 +1258,26 @@ export class ResourcePageComponent implements OnInit {
 
   private buildForm(item?: Entity): void {
     this.form = this.createForm(this.definition.fields, item);
+
+    if (this.isDebtsResource()) {
+      this.form.get('loanStartDate')?.valueChanges.subscribe(() => this.syncDebtDueDateFromLoanTerms());
+      this.form.get('termMonths')?.valueChanges.subscribe(() => this.syncDebtDueDateFromLoanTerms());
+      this.syncDebtDueDateFromLoanTerms();
+    }
+  }
+
+  private syncDebtDueDateFromLoanTerms(): void {
+    const loanStartValue: unknown = this.form.get('loanStartDate')?.value;
+    const termMonths = Math.floor(Number(this.form.get('termMonths')?.value ?? 0));
+    const dueDateControl = this.form.get('dueDate');
+
+    if (!dueDateControl || !(loanStartValue instanceof Date) || !Number.isFinite(termMonths) || termMonths <= 0) {
+      return;
+    }
+
+    const dueDate = new Date(loanStartValue);
+    dueDate.setMonth(dueDate.getMonth() + termMonths);
+    (dueDateControl as unknown as FormControl).setValue(dueDate, { emitEvent: false });
   }
 
   private reloadAfterMutation(): void {
@@ -895,6 +1425,11 @@ export class ResourcePageComponent implements OnInit {
   }
 
   private loadLookupOptions(): void {
+    if (this.isBudgetsResource()) {
+      this.loadBudgetTrackingTransactions();
+      return;
+    }
+
     if (!this.usesAccountLookup() && !this.isTransactionsResource()) {
       return;
     }
@@ -980,11 +1515,22 @@ export class ResourcePageComponent implements OnInit {
       error: () => undefined
     });
 
+    this.loadBudgetTrackingTransactions();
+  }
+
+  private loadBudgetTrackingTransactions(): void {
     this.api.get<unknown>('transactions', { page: 1, pageSize: 1000 }).subscribe({
       next: (response) => {
         this.budgetTransactions = this.normalizeList(response).filter((transaction) => transaction['type'] === 'Expense');
       },
       error: () => undefined
+    });
+  }
+
+  private loadDebtInstallments(): void {
+    this.api.get<Entity[]>('debt-installments').subscribe({
+      next: (installments) => this.debtInstallments.set(this.normalizeList(installments)),
+      error: () => this.debtInstallments.set([])
     });
   }
 

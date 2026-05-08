@@ -47,12 +47,12 @@
 
     <label class="field-control">
       <span>Desde</span>
-      <p-calendar [(ngModel)]="transactionFilters['dateFrom']" [showIcon]="true" appendTo="body"></p-calendar>
+      <p-datepicker [(ngModel)]="transactionFilters['dateFrom']" [showIcon]="true" [appendTo]="'body'" [fluid]="true"></p-datepicker>
     </label>
 
     <label class="field-control">
       <span>Hasta</span>
-      <p-calendar [(ngModel)]="transactionFilters['dateTo']" [showIcon]="true" appendTo="body"></p-calendar>
+      <p-datepicker [(ngModel)]="transactionFilters['dateTo']" [showIcon]="true" [appendTo]="'body'" [fluid]="true"></p-datepicker>
     </label>
 
     <label class="field-control search-filter">
@@ -81,14 +81,242 @@
   </div>
 </p-toolbar>
 
+<section class="saving-goals-overview" *ngIf="isSavingGoalsResource()">
+  <article class="saving-goal-kpi">
+    <span>Ahorrado</span>
+    <strong>{{ savingGoalSavedTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>de {{ savingGoalTargetTotal() | currency: 'USD' : 'symbol' : '1.0-2' }} objetivo total</small>
+  </article>
+  <article class="saving-goal-kpi">
+    <span>Faltante</span>
+    <strong>{{ savingGoalRemainingTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ savingGoalProgressTotal() | number: '1.0-0' }}% global completado</small>
+  </article>
+  <article class="saving-goal-kpi">
+    <span>Aporte mensual</span>
+    <strong>{{ savingGoalMonthlyTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>Suma sugerida para llegar a tiempo</small>
+  </article>
+  <article class="saving-goal-kpi">
+    <span>Próxima meta</span>
+    <strong>{{ nextSavingGoalName() }}</strong>
+    <small>{{ nextSavingGoalDateLabel() }}</small>
+  </article>
+  <div class="saving-goals-progress">
+    <p-progressBar [value]="savingGoalProgressTotal()" [showValue]="false"></p-progressBar>
+  </div>
+</section>
+
+<section class="budget-education" *ngIf="isBudgetsResource()">
+  <article>
+    <i class="pi pi-chart-pie" aria-hidden="true"></i>
+    <div>
+      <strong>Qué es un presupuesto</strong>
+      <span>Es un límite de gasto que decides para una necesidad concreta, como supermercado, luz eléctrica o transporte.</span>
+    </div>
+  </article>
+  <article>
+    <i class="pi pi-calendar" aria-hidden="true"></i>
+    <div>
+      <strong>Cómo funciona el periodo</strong>
+      <span>El periodo define cada cuánto se evalúa el límite: mensual, trimestral o anual.</span>
+    </div>
+  </article>
+  <article>
+    <i class="pi pi-clock" aria-hidden="true"></i>
+    <div>
+      <strong>Qué significa vigencia</strong>
+      <span>Indefinida mantiene el presupuesto activo sin fecha final; fija usa inicio y fin para controlar una ventana específica.</span>
+    </div>
+  </article>
+</section>
+
+<section class="budget-overview" *ngIf="isBudgetsResource()">
+  <article class="budget-kpi">
+    <span>Presupuestos activos</span>
+    <strong>{{ activeBudgetCount() }}</strong>
+    <small>Disponibles para asociar a transacciones</small>
+  </article>
+  <article class="budget-kpi">
+    <span>Límite total</span>
+    <strong>{{ budgetLimitTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>Suma de presupuestos activos</small>
+  </article>
+  <article class="budget-kpi">
+    <span>Usado</span>
+    <strong>{{ budgetUsedTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ budgetUsageTotal() | number: '1.0-0' }}% del límite total</small>
+  </article>
+  <article class="budget-kpi">
+    <span>Disponible</span>
+    <strong>{{ budgetRemainingTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ mostUsedBudgetLabel() }}</small>
+  </article>
+  <div class="budget-overview-progress">
+    <p-progressBar [value]="budgetUsageTotal()" [showValue]="false"></p-progressBar>
+  </div>
+</section>
+
+<section class="purchase-goals-context" *ngIf="isPurchaseGoalsResource()">
+  <article>
+    <i class="pi pi-shopping-bag" aria-hidden="true"></i>
+    <div>
+      <strong>Qué es una meta de compra</strong>
+      <span>Es una compra planificada que separas de tus gastos diarios para decidir cuánto ahorrar antes de comprar.</span>
+    </div>
+  </article>
+  <article>
+    <i class="pi pi-sort-amount-up" aria-hidden="true"></i>
+    <div>
+      <strong>Cómo usar la prioridad</strong>
+      <span>La prioridad te ayuda a ordenar qué compras atender primero cuando el dinero disponible no alcanza para todo.</span>
+    </div>
+  </article>
+  <article>
+    <i class="pi pi-wallet" aria-hidden="true"></i>
+    <div>
+      <strong>Cuenta asociada</strong>
+      <span>Es la cuenta donde quieres controlar el dinero reservado o relacionado con esa compra.</span>
+    </div>
+  </article>
+</section>
+
+<section class="purchase-goals-overview" *ngIf="isPurchaseGoalsResource()">
+  <article class="purchase-goal-kpi">
+    <span>Ahorrado</span>
+    <strong>{{ purchaseGoalSavedTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>de {{ purchaseGoalTargetTotal() | currency: 'USD' : 'symbol' : '1.0-2' }} objetivo total</small>
+  </article>
+  <article class="purchase-goal-kpi">
+    <span>Faltante</span>
+    <strong>{{ purchaseGoalRemainingTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ purchaseGoalProgressTotal() | number: '1.0-0' }}% global completado</small>
+  </article>
+  <article class="purchase-goal-kpi">
+    <span>Aporte mensual</span>
+    <strong>{{ purchaseGoalMonthlyTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>Suma sugerida para llegar a tiempo</small>
+  </article>
+  <article class="purchase-goal-kpi">
+    <span>Mayor prioridad</span>
+    <strong>{{ topPurchaseGoalName() }}</strong>
+    <small>{{ topPurchaseGoalDateLabel() }}</small>
+  </article>
+  <div class="purchase-goals-progress">
+    <p-progressBar [value]="purchaseGoalProgressTotal()" [showValue]="false"></p-progressBar>
+  </div>
+</section>
+
+<section class="debt-context" *ngIf="isDebtsResource()">
+  <article>
+    <i class="pi pi-credit-card" aria-hidden="true"></i>
+    <div>
+      <strong>Qué es una deuda</strong>
+      <span>Una deuda puede ser dinero que debes pagar o dinero que otra persona te debe cobrar.</span>
+    </div>
+  </article>
+  <article>
+    <i class="pi pi-arrow-up-right" aria-hidden="true"></i>
+    <div>
+      <strong>Por pagar</strong>
+      <span>Representa compromisos que reducen tu dinero disponible cuando haces un pago.</span>
+    </div>
+  </article>
+  <article>
+    <i class="pi pi-arrow-down-left" aria-hidden="true"></i>
+    <div>
+      <strong>Por cobrar</strong>
+      <span>Representa dinero pendiente de recibir; al cobrarlo aumenta el saldo de la cuenta elegida.</span>
+    </div>
+  </article>
+</section>
+
+<section class="debt-overview" *ngIf="isDebtsResource()">
+  <article class="debt-kpi">
+    <span>Por pagar</span>
+    <strong>{{ debtPayableTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ activePayableDebtCount() }} deudas activas</small>
+  </article>
+  <article class="debt-kpi">
+    <span>Por cobrar</span>
+    <strong>{{ debtReceivableTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ activeReceivableDebtCount() }} cuentas por cobrar</small>
+  </article>
+  <article class="debt-kpi">
+    <span>Pagado por mí</span>
+    <strong>{{ payableDebtPaidTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>Pagos realizados sobre deudas por pagar</small>
+  </article>
+  <article class="debt-kpi">
+    <span>Cobrado por mí</span>
+    <strong>{{ receivableDebtCollectedTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>Dinero ingresado por deudas por cobrar</small>
+  </article>
+  <article class="debt-kpi">
+    <span>En mora</span>
+    <strong>{{ overdueDebtAmount() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ overdueDebtCount() }} cuotas vencidas sin cubrir</small>
+  </article>
+</section>
+
+<p-toolbar *ngIf="isDebtsResource()" styleClass="resource-toolbar debt-toolbar">
+  <div class="debt-filter-grid">
+    <label class="field-control">
+      <span>Tipo</span>
+      <p-select
+        [options]="selectOptions({ key: 'type', label: 'Tipo', type: 'select', options: ['Payable', 'Receivable'] })"
+        optionLabel="label"
+        optionValue="value"
+        [(ngModel)]="debtFilters['type']"
+        appendTo="body"
+        placeholder="Todos"
+        [showClear]="true"
+      ></p-select>
+    </label>
+
+    <label class="field-control">
+      <span>Estado</span>
+      <p-select
+        [options]="selectOptions({ key: 'status', label: 'Estado', type: 'select', options: ['Active', 'Paid', 'Cancelled'] })"
+        optionLabel="label"
+        optionValue="value"
+        [(ngModel)]="debtFilters['status']"
+        appendTo="body"
+        placeholder="Todos"
+        [showClear]="true"
+      ></p-select>
+    </label>
+
+    <label class="field-control">
+      <span>Desde monto</span>
+      <p-inputNumber [(ngModel)]="debtFilters['minAmount']" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
+    </label>
+
+    <label class="field-control">
+      <span>Hasta monto</span>
+      <p-inputNumber [(ngModel)]="debtFilters['maxAmount']" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
+    </label>
+
+    <label class="field-control search-filter">
+      <span>Buscar</span>
+      <input pInputText [(ngModel)]="debtFilters['search']" placeholder="Contacto o notas" (keydown.enter)="applyDebtFilters()" />
+    </label>
+
+    <div class="filter-actions">
+      <button pButton type="button" icon="pi pi-search" label="Buscar" (click)="applyDebtFilters()"></button>
+      <button pButton type="button" icon="pi pi-filter-slash" label="Limpiar" severity="secondary" outlined (click)="clearDebtFilters()"></button>
+    </div>
+  </div>
+</p-toolbar>
+
 <section class="resource-card">
   <p-table
-    [value]="items()"
+    [value]="tableItems()"
     [loading]="loading()"
-    [paginator]="isTransactionsResource() ? totalRecords() > 0 : items().length > 10"
+    [paginator]="isTransactionsResource() ? totalRecords() > 0 : tableItems().length > 10"
     [rows]="isTransactionsResource() ? transactionRows : 10"
     [first]="isTransactionsResource() ? transactionFirst : 0"
-    [totalRecords]="isTransactionsResource() ? totalRecords() : items().length"
+    [totalRecords]="isTransactionsResource() ? totalRecords() : tableItems().length"
     [lazy]="isTransactionsResource()"
     [rowsPerPageOptions]="isTransactionsResource() ? [10, 20, 50] : [10]"
     (onLazyLoad)="loadLazy($event)"
@@ -105,7 +333,7 @@
     <ng-template pTemplate="body" let-item>
       <tr [class.selected-row]="selectedParent === item">
         <td *ngFor="let field of tableFields()">
-          <app-money-cell *ngIf="field.type === 'currency'; else nonMoney" [value]="item[field.key]"></app-money-cell>
+          <app-money-cell *ngIf="field.type === 'currency'; else nonMoney" [value]="tableCellValue(item, field)"></app-money-cell>
           <ng-template #nonMoney>
             <span *ngIf="isAccountsResource() && field.key === 'isActive'; else nonAccountStatus" class="active-toggle-cell">
               <p-toggleswitch
@@ -127,7 +355,10 @@
             <span *ngIf="field.type === 'color'" class="color-cell">
               <span class="color-dot" [style.background]="item[field.key]"></span>{{ item[field.key] || '-' }}
             </span>
-            <span *ngIf="field.type !== 'color' && field.type !== 'date'">{{ displayValue(item, field) }}</span>
+            <span
+              *ngIf="field.type !== 'color' && field.type !== 'date'"
+              [class.goal-progress-cell]="isSavingGoalProgressField(field) || isBudgetUsageField(field) || isPurchaseGoalProgressField(field) || isDebtProgressField(field)"
+            >{{ displayValue(item, field) }}</span>
             <span *ngIf="field.type === 'date'">{{ item[field.key] | date: field.showTime ? 'medium' : 'mediumDate' }}</span>
           </ng-template>
         </td>
@@ -163,55 +394,116 @@
   </p-table>
 </section>
 
-<section class="resource-card child-card" *ngIf="activeChild && selectedParent">
-  <div class="child-header">
-    <div>
-      <h2>{{ activeChild.title }}</h2>
-      <p>Registro padre: {{ selectedParent['name'] || selectedParent['contactName'] || selectedParent['id'] }}</p>
+<p-dialog
+  [(visible)]="childDetailVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: 'min(1080px, 94vw)' }"
+  [contentStyle]="{ overflow: 'visible' }"
+  styleClass="child-detail-dialog"
+  *ngIf="activeChild && selectedParent"
+>
+  <ng-template pTemplate="header">
+    <div class="child-drawer-title">
+      <span>{{ activeChild.title }}</span>
+      <strong>{{ selectedParent['name'] || selectedParent['contactName'] || selectedParent['id'] }}</strong>
     </div>
-    <button pButton type="button" icon="pi pi-plus" label="Agregar" (click)="openChildCreate()"></button>
-  </div>
+  </ng-template>
 
-  <p-table [value]="childItems()" [loading]="childLoading()" responsiveLayout="scroll">
-    <ng-template pTemplate="header">
-      <tr>
-        <th *ngFor="let field of childTableFields()">{{ field.label }}</th>
-        <th class="actions-col">Acciones</th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-item>
-      <tr>
-        <td *ngFor="let field of childTableFields()">
-          <app-money-cell *ngIf="field.type === 'currency'; else childPlain" [value]="item[field.key]"></app-money-cell>
-          <ng-template #childPlain>
-            <span *ngIf="field.type === 'date'">{{ item[field.key] | date: field.showTime ? 'medium' : 'mediumDate' }}</span>
-            <span *ngIf="field.type !== 'date'">{{ displayValue(item, field) }}</span>
-          </ng-template>
-        </td>
-        <td class="row-actions">
-          <button pButton type="button" icon="pi pi-pencil" text rounded (click)="openChildEdit(item)" title="Editar"></button>
-          <button pButton type="button" icon="pi pi-trash" severity="danger" text rounded (click)="removeChild(item)" title="Eliminar"></button>
-        </td>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="emptymessage">
-      <tr>
-        <td [attr.colspan]="childTableFields().length + 1">
-          <div class="empty-state compact">
-            <i class="pi pi-list"></i>
-            <strong>Sin detalle</strong>
-          </div>
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
-</section>
+  <div class="child-drawer-body">
+    <section class="child-drawer-summary">
+      <div>
+        <span>Registro padre</span>
+        <strong>{{ selectedParent['name'] || selectedParent['contactName'] || selectedParent['id'] }}</strong>
+      </div>
+      <div>
+        <span>Detalle</span>
+        <strong>{{ childItems().length }} registros</strong>
+      </div>
+    </section>
+
+    <div class="child-drawer-actions">
+      <button pButton type="button" icon="pi pi-plus" label="Agregar" (click)="openChildCreate()"></button>
+    </div>
+
+    <p-table [value]="childItems()" [loading]="childLoading()" responsiveLayout="scroll" styleClass="child-detail-table">
+      <ng-template pTemplate="header">
+        <tr>
+          <th *ngFor="let field of childTableFields()">{{ field.label }}</th>
+          <th class="actions-col">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td *ngFor="let field of childTableFields()">
+            <app-money-cell *ngIf="field.type === 'currency'; else childPlain" [value]="item[field.key]"></app-money-cell>
+            <ng-template #childPlain>
+              <span *ngIf="field.type === 'date'">{{ item[field.key] | date: field.showTime ? 'medium' : 'mediumDate' }}</span>
+              <span *ngIf="field.type !== 'date'">{{ displayValue(item, field) }}</span>
+            </ng-template>
+          </td>
+          <td class="row-actions">
+            <button pButton type="button" icon="pi pi-pencil" text rounded (click)="openChildEdit(item)" title="Editar"></button>
+            <button pButton type="button" icon="pi pi-trash" severity="danger" text rounded (click)="removeChild(item)" title="Eliminar"></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="childTableFields().length + 1">
+            <div class="empty-state compact">
+              <i class="pi pi-list"></i>
+              <strong>Sin detalle registrado</strong>
+              <span>Agrega el primer registro para ver el historial aquí.</span>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <section class="installment-detail" *ngIf="isDebtsResource() && debtInstallmentRows().length">
+      <div class="installment-head">
+        <div>
+          <strong>Cronograma esperado</strong>
+          <span>Compara cuotas esperadas contra pagos reales registrados.</span>
+        </div>
+        <p-tag severity="danger" [value]="overdueDebtCount() + ' vencidas'"></p-tag>
+      </div>
+
+      <p-table [value]="debtInstallmentRows()" responsiveLayout="scroll" styleClass="installment-table">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>#</th>
+            <th>Vence</th>
+            <th>Esperado</th>
+            <th>Pagado</th>
+            <th>Pendiente</th>
+            <th>Estado</th>
+            <th>Atraso</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td>{{ row.number }}</td>
+            <td>{{ row.dueDate | date: 'mediumDate' }}</td>
+            <td>{{ row.expectedPayment | currency: 'USD' : 'symbol' : '1.0-2' }}</td>
+            <td>{{ row.paidAmount | currency: 'USD' : 'symbol' : '1.0-2' }}</td>
+            <td>{{ row.pendingAmount | currency: 'USD' : 'symbol' : '1.0-2' }}</td>
+            <td><app-status-tag [value]="row.status"></app-status-tag></td>
+            <td>{{ row.daysOverdue > 0 ? row.daysOverdue + ' días' : '-' }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </section>
+  </div>
+</p-dialog>
 
 <p-dialog
   [(visible)]="dialogVisible"
   [modal]="true"
   [draggable]="false"
-  [style]="{ width: isAccountsResource() || isTransactionsResource() || isSavingGoalsResource() ? 'min(920px, 94vw)' : 'min(760px, 94vw)' }"
+  [style]="{ width: isAccountsResource() || isTransactionsResource() || isSavingGoalsResource() || isDebtsResource() ? 'min(920px, 94vw)' : 'min(760px, 94vw)' }"
   [header]="editingItem ? 'Editar ' + definition.title : 'Nuevo ' + definition.title"
 >
   <form class="resource-form" [formGroup]="form" (ngSubmit)="save()">
@@ -229,14 +521,15 @@
         ></textarea>
         <p-inputNumber *ngSwitchCase="'number'" [formControlName]="field.key" mode="decimal"></p-inputNumber>
         <p-inputNumber *ngSwitchCase="'currency'" [formControlName]="field.key" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
-        <p-calendar
+        <p-datepicker
           *ngSwitchCase="'date'"
           [formControlName]="field.key"
           [showIcon]="true"
           [showTime]="field.showTime || false"
           hourFormat="24"
-          appendTo="body"
-        ></p-calendar>
+          [appendTo]="'body'"
+          [fluid]="true"
+        ></p-datepicker>
         <p-select
           *ngSwitchCase="'select'"
           [options]="selectOptions(field)"
@@ -487,6 +780,46 @@
           <small *ngIf="isInvalid(field)">Campo requerido o valor invalido.</small>
         </label>
       </ng-container>
+
+      <section class="amortization-preview" *ngIf="isDebtsResource() && debtAmortizationRows().length">
+        <div class="amortization-head">
+          <div>
+            <strong>Tabla de amortización</strong>
+            <span>{{ debtAmortizationMethodLabel() }} · {{ debtAmortizationRows().length }} cuotas</span>
+          </div>
+          <div>
+            <span>Total a pagar</span>
+            <strong>{{ debtAmortizationTotalPayment() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+          </div>
+          <div>
+            <span>Interés total</span>
+            <strong>{{ debtAmortizationTotalInterest() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+          </div>
+        </div>
+
+        <p-table [value]="debtAmortizationRows()" responsiveLayout="scroll" styleClass="amortization-table">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>#</th>
+              <th>Fecha</th>
+              <th>Cuota</th>
+              <th>Capital</th>
+              <th>Interés</th>
+              <th>Saldo</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td>{{ row.period }}</td>
+              <td>{{ row.date | date: 'mediumDate' }}</td>
+              <td>{{ row.payment | currency: 'USD' : 'symbol' : '1.0-2' }}</td>
+              <td>{{ row.principal | currency: 'USD' : 'symbol' : '1.0-2' }}</td>
+              <td>{{ row.interest | currency: 'USD' : 'symbol' : '1.0-2' }}</td>
+              <td>{{ row.balance | currency: 'USD' : 'symbol' : '1.0-2' }}</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </section>
     </ng-template>
 
     <footer>
@@ -528,14 +861,15 @@
             [placeholder]="field.placeholder || field.label"
           ></p-select>
           <p-inputNumber *ngSwitchCase="'currency'" [formControlName]="field.key" mode="currency" currency="USD" locale="en-US"></p-inputNumber>
-          <p-calendar
+          <p-datepicker
             *ngSwitchCase="'date'"
             [formControlName]="field.key"
             [showIcon]="true"
             [showTime]="field.showTime || false"
             hourFormat="24"
-            appendTo="body"
-          ></p-calendar>
+            [appendTo]="'body'"
+            [fluid]="true"
+          ></p-datepicker>
         </ng-container>
         <small *ngIf="accountBalanceHint(field, true)" class="account-balance-hint">{{ accountBalanceHint(field, true) }}</small>
         <small *ngIf="isInvalid(field, true)">Campo requerido o valor invalido.</small>

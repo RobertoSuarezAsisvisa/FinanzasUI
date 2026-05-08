@@ -38,13 +38,19 @@
     <section class="metrics-grid">
       <article
         *ngFor="let card of overviewCards()"
-        [ngClass]="['metric-card', 'tone-' + card.tone]"
+        class="metric-card"
+        [class.tone-asset]="card.tone === 'asset'"
+        [class.tone-income]="card.tone === 'income'"
+        [class.tone-expense]="card.tone === 'expense'"
+        [class.tone-goal]="card.tone === 'goal'"
+        [class.tone-debt]="card.tone === 'debt'"
         [pTooltip]="card.tooltip"
         tooltipPosition="top"
       >
-        <div class="metric-icon"><i [class]="card.icon"></i></div>
+        <div class="metric-icon"><i [class]="card.icon" aria-hidden="true"></i></div>
         <span>{{ card.label }}</span>
         <strong>{{ card.money ? cardCurrency(card.value) : card.value }}</strong>
+        <small>{{ card.detail }}</small>
       </article>
     </section>
 
@@ -60,7 +66,12 @@
       <div class="bi-metrics">
         <article
           *ngFor="let item of biMetrics()"
-          [ngClass]="['bi-metric', 'tone-' + item.tone]"
+          class="bi-metric"
+          [class.tone-asset]="item.tone === 'asset'"
+          [class.tone-income]="item.tone === 'income'"
+          [class.tone-expense]="item.tone === 'expense'"
+          [class.tone-goal]="item.tone === 'goal'"
+          [class.tone-debt]="item.tone === 'debt'"
           [pTooltip]="item.tooltip"
           tooltipPosition="top"
         >
@@ -79,7 +90,7 @@
           <div class="mix-list">
             <div class="mix-row" *ngFor="let item of transactionMix()" [pTooltip]="mixTooltip(item)" tooltipPosition="top">
               <div class="mix-label">
-                <i [style.background]="item.color"></i>
+                <i [style.background]="item.color" aria-hidden="true"></i>
                 <span>{{ item.label }}</span>
               </div>
               <strong>{{ item.formatted }}</strong>
@@ -93,7 +104,7 @@
 
         <article class="dashboard-card bi-card">
           <div class="mini-head">
-            <span>Gasto por categoria</span>
+            <span>Gasto por categoría</span>
             <button pButton type="button" label="Ver más" icon="pi pi-list" text size="small" (click)="categoriesDialogVisible = true"></button>
           </div>
           <div class="bar-list" *ngIf="expenseByCategory().length; else emptyBiCategories">
@@ -106,14 +117,14 @@
             </div>
           </div>
           <ng-template #emptyBiCategories>
-            <div class="empty-state inline"><i class="pi pi-chart-bar"></i><span>Sin gastos categorizados.</span></div>
+            <div class="empty-state inline"><i class="pi pi-chart-bar" aria-hidden="true"></i><span>Sin gastos categorizados.</span></div>
           </ng-template>
         </article>
 
         <article class="dashboard-card bi-card">
           <div class="mini-head">
             <span>Gasto por cuenta</span>
-            <strong>Concentracion</strong>
+            <strong>Concentración</strong>
           </div>
           <div class="bar-list" *ngIf="expenseByAccount().length; else emptyBiAccounts">
             <div class="bar-row" *ngFor="let item of expenseByAccount()" [pTooltip]="barTooltip(item)" tooltipPosition="top">
@@ -125,7 +136,7 @@
             </div>
           </div>
           <ng-template #emptyBiAccounts>
-            <div class="empty-state inline"><i class="pi pi-wallet"></i><span>Sin gastos por cuenta.</span></div>
+            <div class="empty-state inline"><i class="pi pi-wallet" aria-hidden="true"></i><span>Sin gastos por cuenta.</span></div>
           </ng-template>
         </article>
 
@@ -145,7 +156,7 @@
             </div>
           </div>
           <ng-template #emptyBiBudgets>
-            <div class="empty-state inline"><i class="pi pi-chart-pie"></i><span>Sin presupuestos activos.</span></div>
+            <div class="empty-state inline"><i class="pi pi-chart-pie" aria-hidden="true"></i><span>Sin presupuestos activos.</span></div>
           </ng-template>
         </article>
 
@@ -155,7 +166,7 @@
     <section class="dashboard-grid">
       <article class="dashboard-card bi-card debt-exposure-card">
         <div class="mini-head">
-          <span>Exposicion de deudas</span>
+          <span>Exposición de deudas</span>
           <strong>{{ payableTotal() | currency: 'USD' : 'symbol' : '1.0-0' }} por pagar</strong>
         </div>
         <div class="bar-list" *ngIf="debtExposure().length; else emptyBiDebts">
@@ -174,7 +185,7 @@
           </div>
         </div>
         <ng-template #emptyBiDebts>
-          <div class="empty-state inline"><i class="pi pi-credit-card"></i><span>Sin deudas activas.</span></div>
+          <div class="empty-state inline"><i class="pi pi-credit-card" aria-hidden="true"></i><span>Sin deudas activas.</span></div>
         </ng-template>
       </article>
 
@@ -197,7 +208,7 @@
         </div>
 
       <div class="chart-shell" *ngIf="flowChart().points.length; else emptyChart">
-        <svg viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" class="flow-chart" role="img" aria-label="Grafica de flujo mensual">
+        <svg viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" class="flow-chart" role="img" aria-label="Gráfica de flujo mensual">
           <defs>
             <linearGradient id="incomeFill" x1="0" x2="0" y1="0" y2="1">
               <stop offset="0%" stop-color="#1f7a4d" stop-opacity="0.92" />
@@ -235,16 +246,16 @@
 
       <ng-template #emptyChart>
         <div class="empty-state compact">
-          <i class="pi pi-chart-line"></i>
+          <i class="pi pi-chart-line" aria-hidden="true"></i>
           <strong>Sin series disponibles</strong>
           <span>Necesitas transacciones para ver la tendencia.</span>
         </div>
       </ng-template>
 
       <div class="chart-legend">
-        <span><i class="legend-dot income"></i> Ingresos</span>
-        <span><i class="legend-dot expense"></i> Gastos</span>
-        <span><i class="legend-line"></i> Neto</span>
+        <span><i class="legend-dot income" aria-hidden="true"></i> Ingresos</span>
+        <span><i class="legend-dot expense" aria-hidden="true"></i> Gastos</span>
+        <span><i class="legend-line" aria-hidden="true"></i> Neto</span>
       </div>
       </article>
     </section>
@@ -286,7 +297,7 @@
           </div>
         </ng-container>
         <ng-template #emptyAccounts>
-          <div class="empty-state inline"><i class="pi pi-wallet"></i><span>Sin cuentas registradas.</span></div>
+          <div class="empty-state inline"><i class="pi pi-wallet" aria-hidden="true"></i><span>Sin cuentas registradas.</span></div>
         </ng-template>
       </p-panel>
 
@@ -296,7 +307,7 @@
             <span>Activos</span>
             <strong>{{ activeBudgets() }}</strong>
           </div>
-          <div pTooltip="Suma de los limites definidos en tus presupuestos." tooltipPosition="top">
+          <div pTooltip="Suma de los límites definidos en tus presupuestos." tooltipPosition="top">
             <span>Límite</span>
             <strong>{{ totalBudgetLimit() | currency: 'USD' : 'symbol' : '1.0-0' }}</strong>
           </div>
@@ -304,7 +315,7 @@
 
         <ng-container *ngIf="topBudgets().length; else emptyBudgets">
           <div class="entity-list">
-            <article class="entity-row" *ngFor="let budget of topBudgets()" [pTooltip]="budget.name + ': limite de ' + (budget.limitAmount | currency: 'USD' : 'symbol' : '1.0-0') + ' para periodo ' + budget.periodType + '.'" tooltipPosition="top">
+            <article class="entity-row" *ngFor="let budget of topBudgets()" [pTooltip]="budget.name + ': límite de ' + (budget.limitAmount | currency: 'USD' : 'symbol' : '1.0-0') + ' para periodo ' + budget.periodType + '.'" tooltipPosition="top">
               <div class="entity-copy">
                 <strong>{{ budget.name }}</strong>
                 <span>{{ budget.periodType }} / {{ budget.validityType }}</span>
@@ -317,7 +328,7 @@
           </div>
         </ng-container>
         <ng-template #emptyBudgets>
-          <div class="empty-state inline"><i class="pi pi-chart-pie"></i><span>Sin presupuestos activos.</span></div>
+          <div class="empty-state inline"><i class="pi pi-chart-pie" aria-hidden="true"></i><span>Sin presupuestos activos.</span></div>
         </ng-template>
       </p-panel>
     </section>
@@ -404,7 +415,7 @@
         </div>
       </ng-container>
       <ng-template #emptyGoals>
-        <div class="empty-state inline"><i class="pi pi-flag"></i><span>Sin metas pendientes.</span></div>
+        <div class="empty-state inline"><i class="pi pi-flag" aria-hidden="true"></i><span>Sin metas pendientes.</span></div>
       </ng-template>
       </p-panel>
 
@@ -445,7 +456,7 @@
                   <span>Abonado</span>
                   <strong>{{ debt.originalAmount - debt.remainingAmount | currency: debt.currency : 'symbol' : '1.0-0' }}</strong>
                 </div>
-                <div pTooltip="Fecha limite o referencia registrada para esta deuda." tooltipPosition="top">
+                <div pTooltip="Fecha límite o referencia registrada para esta deuda." tooltipPosition="top">
                   <span>Vence</span>
                   <strong>{{ debt.dueDate ? (debt.dueDate | date: 'mediumDate') : 'Sin fecha' }}</strong>
                 </div>
@@ -458,7 +469,7 @@
         </div>
       </ng-container>
       <ng-template #emptyDebts>
-        <div class="empty-state inline"><i class="pi pi-credit-card"></i><span>Sin deudas abiertas.</span></div>
+        <div class="empty-state inline"><i class="pi pi-credit-card" aria-hidden="true"></i><span>Sin deudas abiertas.</span></div>
       </ng-template>
       </p-panel>
 
@@ -467,7 +478,7 @@
         <div class="entity-list">
           <article class="activity-row" *ngFor="let transaction of recentTransactions()" [pTooltip]="transaction.type + ': ' + (transaction.amount | currency: transaction.currency : 'symbol' : '1.0-0') + ' registrado el ' + (transaction.transactionDate | date: 'mediumDate') + '.'" tooltipPosition="top">
             <div class="activity-icon" [class.income]="transaction.type === 'Income'" [class.expense]="transaction.type === 'Expense'">
-              <i [class]="'pi ' + (transaction.type === 'Income' ? 'pi-arrow-down-left' : transaction.type === 'Expense' ? 'pi-arrow-up-right' : 'pi-arrow-right-arrow-left')"></i>
+              <i [class]="'pi ' + (transaction.type === 'Income' ? 'pi-arrow-down-left' : transaction.type === 'Expense' ? 'pi-arrow-up-right' : 'pi-arrow-right-arrow-left')" aria-hidden="true"></i>
             </div>
             <div class="entity-copy">
               <strong>{{ transaction.description || transaction.type }}</strong>
@@ -481,7 +492,7 @@
         </div>
       </ng-container>
       <ng-template #emptyTransactions>
-        <div class="empty-state inline"><i class="pi pi-arrow-right-arrow-left"></i><span>Sin movimientos recientes.</span></div>
+        <div class="empty-state inline"><i class="pi pi-arrow-right-arrow-left" aria-hidden="true"></i><span>Sin movimientos recientes.</span></div>
       </ng-template>
       </p-panel>
     </section>
@@ -490,7 +501,7 @@
   <ng-template #loadingState>
     <section class="loading-state">
       <p-progressSpinner ariaLabel="Cargando dashboard"></p-progressSpinner>
-      <span>Cargando datos financieros...</span>
+      <span>Cargando datos financieros…</span>
     </section>
   </ng-template>
 
@@ -567,7 +578,7 @@
       </article>
     </div>
     <ng-template #emptyBudgetModal>
-      <div class="empty-state inline"><i class="pi pi-chart-pie"></i><span>Sin presupuestos activos.</span></div>
+      <div class="empty-state inline"><i class="pi pi-chart-pie" aria-hidden="true"></i><span>Sin presupuestos activos.</span></div>
     </ng-template>
   </p-dialog>
 </div>
