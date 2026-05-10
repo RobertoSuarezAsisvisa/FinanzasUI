@@ -1,6 +1,9 @@
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
+@if (isAuthPage()) {
+  <router-outlet></router-outlet>
+} @else {
 <div class="app-shell">
   <aside class="app-sidebar" [class.open]="menuOpen">
     <a class="brand" routerLink="/dashboard" (click)="menuOpen = false">
@@ -26,7 +29,8 @@
         <span>Finanzas UI</span>
       </div>
       <div class="topbar-actions">
-        <span class="api-pill">Usuario unico</span>
+        <span class="api-pill">{{ auth.user()?.displayName || auth.user()?.email }}</span>
+        <button pButton type="button" icon="pi pi-sign-out" text rounded aria-label="Cerrar sesion" (click)="logout()"></button>
       </div>
     </p-toolbar>
 
@@ -35,3 +39,4 @@
     </main>
   </div>
 </div>
+}

@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
+import { AuthService } from './core/auth/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -15,6 +16,8 @@ import { ToolbarModule } from 'primeng/toolbar';
 })
 export class AppComponent {
   menuOpen = false;
+
+  constructor(readonly auth: AuthService, private readonly router: Router) {}
 
   readonly navItems = [
     { label: 'Dashboard', icon: 'pi pi-chart-line', route: '/dashboard' },
@@ -31,4 +34,12 @@ export class AppComponent {
     { label: 'Recurrentes', icon: 'pi pi-refresh', route: '/settings/recurring-rules' },
     { label: 'Contexto', icon: 'pi pi-sliders-h', route: '/settings/user-context' }
   ];
+
+  isAuthPage(): boolean {
+    return this.router.url.startsWith('/login') || this.router.url.startsWith('/register');
+  }
+
+  logout(): void {
+    this.auth.logout();
+  }
 }
