@@ -32,7 +32,8 @@ export class AppComponent {
     { label: 'Tags', icon: 'pi pi-tags', route: '/catalogs/tags' },
     { label: 'Periodos', icon: 'pi pi-calendar-clock', route: '/settings/accounting-periods' },
     { label: 'Recurrentes', icon: 'pi pi-refresh', route: '/settings/recurring-rules' },
-    { label: 'Contexto', icon: 'pi pi-sliders-h', route: '/settings/user-context' }
+    { label: 'Contexto', icon: 'pi pi-sliders-h', route: '/settings/user-context' },
+    { label: 'API Keys', icon: 'pi pi-key', route: '/settings/api-keys' }
   ];
 
   isAuthPage(): boolean {

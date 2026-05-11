@@ -51,6 +51,7 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
       { key: 'categoryId', label: 'Categoria', type: 'select', table: true },
       { key: 'budgetId', label: 'Presupuesto', type: 'select', table: true, visibleWhen: { key: 'type', value: 'Expense' } },
       { key: 'description', label: 'Descripcion', type: 'textarea', table: true, placeholder: 'Ej: Taxi al banco, compras de casa, pago de deuda...' },
+      { key: 'attachmentCount', label: 'Evidencias', type: 'number', readonly: true, table: true },
       { key: 'reference', label: 'Referencia', type: 'text', readonly: true },
       { key: 'transactionDate', label: 'Fecha', type: 'date', required: true, table: true, showTime: true, defaultNow: true },
       { key: 'recurringRuleId', label: 'Regla recurrente', type: 'text', readonly: true },

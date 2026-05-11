@@ -1,0 +1,161 @@
+.api-keys-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.panel {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+}
+
+.panel-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.panel-header h2,
+.generated-card h3 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.panel-header p,
+.generated-card p {
+  color: var(--text-color-secondary);
+  margin: 0.35rem 0 0;
+}
+
+.create-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.field span {
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.generated-card {
+  background: var(--surface-50);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 18%, var(--surface-border));
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+  padding: 1rem;
+}
+
+.generated-copy {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.generated-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+pre {
+  background: var(--surface-0);
+  border: 1px solid var(--surface-border);
+  border-radius: 0.5rem;
+  margin: 1rem 0 0;
+  overflow-x: auto;
+  padding: 0.9rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.api-key-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.api-key-row {
+  align-items: flex-start;
+  border: 1px solid var(--surface-border);
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 1rem;
+}
+
+.api-key-title {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.api-key-meta {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.api-key-meta code {
+  background: var(--surface-100);
+  border-radius: 0.35rem;
+  color: var(--text-color);
+  display: inline-flex;
+  max-width: 100%;
+  padding: 0.35rem 0.5rem;
+}
+
+dl {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+
+dt {
+  color: var(--text-color-secondary);
+  font-size: 0.82rem;
+  margin-bottom: 0.2rem;
+}
+
+dd {
+  margin: 0;
+}
+
+.row-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.empty-state {
+  color: var(--text-color-secondary);
+  padding: 1rem 0;
+}
+
+@media (max-width: 900px) {
+  .api-key-row {
+    grid-template-columns: 1fr;
+  }
+
+  .row-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  dl {
+    grid-template-columns: 1fr;
+  }
+}

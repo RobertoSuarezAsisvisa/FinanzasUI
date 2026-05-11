@@ -55,6 +55,7 @@ export interface Transaction {
   transactionDate: string;
   recurringRuleId?: Id | null;
   tagIds?: Id[];
+  attachmentCount?: number;
 }
 
 export interface Budget {
@@ -232,6 +233,17 @@ export interface TransactionSummary {
   reference?: string | null;
   transactionDate: string;
   tagIds?: Id[];
+  attachmentCount: number;
+}
+
+export interface TransactionAttachment {
+  id: Id;
+  transactionId: Id;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+  contentUrl: string;
 }
 
 export interface PagedResult<T> {

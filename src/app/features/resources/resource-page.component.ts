@@ -22,6 +22,7 @@ import { ToolbarModule } from 'primeng/toolbar';
 
 import { ApiService, QueryParams } from '../../core/api/api.service';
 import { ResourceChild, ResourceDefinition, ResourceField, ResourceOption } from '../../core/resource/resource.types';
+import { TransactionAttachment } from '../../core/models/finance.models';
 import { ConfirmDeleteService } from '../../shared/confirm-delete/confirm-delete.service';
 import { MoneyCellComponent } from '../../shared/money-cell/money-cell.component';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
@@ -96,6 +97,9 @@ export class ResourcePageComponent implements OnInit {
   categoryFilterValue = '';
   creatingCategory = false;
   budgetTransactions: Entity[] = [];
+  transactionAttachments = signal<TransactionAttachment[]>([]);
+  attachmentLoading = signal(false);
+  uploadQueue: File[] = [];
   debtInstallments = signal<Entity[]>([]);
   form = new FormGroup({});
   childForm = new FormGroup({});
@@ -190,6 +194,8 @@ export class ResourcePageComponent implements OnInit {
 
   openCreate(): void {
     this.editingItem = null;
+    this.transactionAttachments.set([]);
+    this.uploadQueue = [];
     this.buildForm();
     this.dialogVisible = true;
     this.cdr.detectChanges();
@@ -197,8 +203,10 @@ export class ResourcePageComponent implements OnInit {
 
   openEdit(item: Entity): void {
     this.editingItem = item;
+    this.uploadQueue = [];
     this.buildForm(item);
     this.dialogVisible = true;
+    this.loadTransactionAttachments();
     this.cdr.detectChanges();
   }
 
@@ -214,7 +222,15 @@ export class ResourcePageComponent implements OnInit {
       : this.api.post<Entity>(this.definition.path, payload);
 
     request.subscribe({
-      next: () => {
+      next: (result) => {
+        const savedItem = result as Entity;
+
+        if (this.isTransactionsResource() && this.uploadQueue.length) {
+          this.editingItem = savedItem;
+          this.uploadTransactionFiles(savedItem, true);
+          return;
+        }
+
         this.dialogVisible = false;
         this.messages.add({ severity: 'success', summary: 'Guardado', detail: `${this.definition.title} actualizado.` });
         this.reloadAfterMutation();
@@ -794,6 +810,81 @@ export class ResourcePageComponent implements OnInit {
     return this.transactionFields(['description', 'tagIds']);
   }
 
+  currentTransactionAttachmentCount(): number {
+    return this.transactionAttachments().length;
+  }
+
+  uploadQueuedTransactionFiles(): void {
+    if (!this.editingItem || !this.uploadQueue.length) {
+      return;
+    }
+
+    this.uploadTransactionFiles(this.editingItem, false);
+  }
+
+  attachmentSizeLabel(sizeBytes: number): string {
+    if (sizeBytes < 1024 * 1024) {
+      return `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
+    }
+
+    return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  onTransactionFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    this.uploadQueue = files;
+    input.value = '';
+  }
+
+  queuedTransactionFiles(): File[] {
+    return this.uploadQueue;
+  }
+
+  removeQueuedTransactionFile(index: number): void {
+    this.uploadQueue = this.uploadQueue.filter((_, currentIndex) => currentIndex !== index);
+  }
+
+  loadTransactionAttachments(): void {
+    if (!this.isTransactionsResource() || !this.editingItem) {
+      this.transactionAttachments.set([]);
+      return;
+    }
+
+    this.attachmentLoading.set(true);
+    this.api.get<TransactionAttachment[]>(`transactions/${this.itemId(this.editingItem)}/attachments`).subscribe({
+      next: (attachments) => {
+        this.transactionAttachments.set(attachments);
+        this.attachmentLoading.set(false);
+      },
+      error: (error) => this.fail(error, 'No se pudieron cargar las evidencias.', () => this.attachmentLoading.set(false))
+    });
+  }
+
+  openTransactionAttachment(attachment: TransactionAttachment): void {
+    this.api.blob(`transaction-attachments/${attachment.id}/content`).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank', 'noopener,noreferrer');
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      },
+      error: (error) => this.fail(error, 'No se pudo abrir la evidencia.')
+    });
+  }
+
+  deleteTransactionAttachment(attachment: TransactionAttachment): void {
+    this.confirmDelete.ask(attachment.fileName, () => {
+      this.api.delete<void>(`transaction-attachments/${attachment.id}`).subscribe({
+        next: () => {
+          this.transactionAttachments.set(this.transactionAttachments().filter((item) => item.id !== attachment.id));
+          this.reloadAfterMutation();
+          this.messages.add({ severity: 'success', summary: 'Eliminado', detail: 'Evidencia eliminada.' });
+        },
+        error: (error) => this.fail(error, 'No se pudo eliminar la evidencia.')
+      });
+    });
+  }
+
   clearTransactionFilters(): void {
     this.transactionFilters = {};
     this.transactionFirst = 0;
@@ -1258,6 +1349,9 @@ export class ResourcePageComponent implements OnInit {
 
   private buildForm(item?: Entity): void {
     this.form = this.createForm(this.definition.fields, item);
+    if (!item) {
+      this.transactionAttachments.set([]);
+    }
 
     if (this.isDebtsResource()) {
       this.form.get('loanStartDate')?.valueChanges.subscribe(() => this.syncDebtDueDateFromLoanTerms());
@@ -1282,6 +1376,38 @@ export class ResourcePageComponent implements OnInit {
 
   private reloadAfterMutation(): void {
     this.load(!this.isTransactionsResource());
+  }
+
+  private uploadTransactionFiles(item: Entity, closeOnSuccess: boolean): void {
+    if (!this.uploadQueue.length) {
+      if (closeOnSuccess) {
+        this.dialogVisible = false;
+      }
+      this.reloadAfterMutation();
+      return;
+    }
+
+    const formData = new FormData();
+    for (const file of this.uploadQueue) {
+      formData.append('files', file);
+    }
+
+    this.attachmentLoading.set(true);
+    this.api.postForm<TransactionAttachment[]>(`transactions/${this.itemId(item)}/attachments`, formData).subscribe({
+      next: (attachments) => {
+        this.transactionAttachments.set(attachments);
+        this.uploadQueue = [];
+        this.attachmentLoading.set(false);
+        if (closeOnSuccess) {
+          this.dialogVisible = false;
+          this.messages.add({ severity: 'success', summary: 'Guardado', detail: 'Transacción y evidencias guardadas.' });
+        } else {
+          this.messages.add({ severity: 'success', summary: 'Adjuntos cargados', detail: 'Las evidencias quedaron registradas.' });
+        }
+        this.reloadAfterMutation();
+      },
+      error: (error) => this.fail(error, 'No se pudieron cargar las evidencias.', () => this.attachmentLoading.set(false))
+    });
   }
 
   private accountFields(keys: string[]): ResourceField[] {

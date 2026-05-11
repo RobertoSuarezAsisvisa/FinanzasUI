@@ -1,0 +1,108 @@
+<app-page-header
+  title="API Keys"
+  subtitle="Genera claves para autenticar clientes MCP o integraciones sin compartir tu sesion web."
+  icon="pi pi-key">
+</app-page-header>
+
+<section class="api-keys-layout">
+  <section class="panel">
+    <header class="panel-header">
+      <div>
+        <h2>Nueva API Key</h2>
+        <p>Usa un nombre descriptivo para identificar el cliente o automatizacion que la consumirá.</p>
+      </div>
+    </header>
+
+    <form class="create-form" [formGroup]="form" (ngSubmit)="create()">
+      <label class="field">
+        <span>Nombre</span>
+        <input pInputText type="text" formControlName="name" maxlength="120" placeholder="Ej. Claude Desktop, Zapier, servidor local" />
+      </label>
+
+      <div class="actions">
+        <button pButton type="submit" label="Generar API Key" icon="pi pi-plus" [loading]="saving()"></button>
+      </div>
+    </form>
+
+    @if (generatedKey(); as generatedKey) {
+      <section class="generated-card">
+        <div class="generated-copy">
+          <div>
+            <h3>Clave generada</h3>
+            <p>Guárdala ahora. Después de cerrar este aviso no se podrá volver a consultar completa.</p>
+          </div>
+          <div class="generated-actions">
+            <button pButton type="button" label="Copiar" icon="pi pi-copy" text (click)="copyGeneratedKey()"></button>
+            <button pButton type="button" icon="pi pi-times" text rounded aria-label="Cerrar" (click)="clearGeneratedKey()"></button>
+          </div>
+        </div>
+        <pre>{{ generatedKey }}</pre>
+      </section>
+    }
+  </section>
+
+  <section class="panel">
+    <header class="panel-header">
+      <div>
+        <h2>Claves activas e historicas</h2>
+        <p>Las revocadas quedan registradas y ya no pueden autenticarse. Las eliminadas desaparecen de esta lista.</p>
+      </div>
+      <button pButton type="button" icon="pi pi-refresh" text rounded aria-label="Recargar" (click)="reload()" [loading]="loading()"></button>
+    </header>
+
+    @if (loading()) {
+      <div class="empty-state">Cargando API Keys...</div>
+    } @else if (apiKeys().length === 0) {
+      <div class="empty-state">Todavia no has generado API Keys.</div>
+    } @else {
+      <div class="api-key-list">
+        @for (apiKey of apiKeys(); track apiKey.id) {
+          <article class="api-key-row">
+            <div class="api-key-meta">
+              <div class="api-key-title">
+                <strong>{{ apiKey.name }}</strong>
+                <p-tag [severity]="apiKey.isRevoked ? 'danger' : 'success'" [value]="apiKey.isRevoked ? 'Revocada' : 'Activa'"></p-tag>
+              </div>
+              <code>{{ apiKey.preview }}</code>
+              <dl>
+                <div>
+                  <dt>Creada</dt>
+                  <dd>{{ apiKey.createdAt | date: 'medium' }}</dd>
+                </div>
+                <div>
+                  <dt>Ultimo uso</dt>
+                  <dd>{{ apiKey.lastUsedAt ? (apiKey.lastUsedAt | date: 'medium') : 'Sin uso' }}</dd>
+                </div>
+                <div>
+                  <dt>Revocada</dt>
+                  <dd>{{ apiKey.revokedAt ? (apiKey.revokedAt | date: 'medium') : 'No' }}</dd>
+                </div>
+              </dl>
+            </div>
+
+            <div class="row-actions">
+              <button
+                pButton
+                type="button"
+                label="Revocar"
+                icon="pi pi-ban"
+                text
+                [disabled]="apiKey.isRevoked"
+                (click)="revoke(apiKey)">
+              </button>
+              <button
+                pButton
+                type="button"
+                label="Eliminar"
+                icon="pi pi-trash"
+                text
+                severity="danger"
+                (click)="remove(apiKey)">
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</section>

@@ -91,6 +91,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/resources/resource-page.component').then((m) => m.ResourcePageComponent),
         data: { resource: RESOURCE_DEFINITIONS['userContext'] }
       },
+      {
+        path: 'settings/api-keys',
+        loadComponent: () => import('./features/api-keys/api-keys-page.component').then((m) => m.ApiKeysPageComponent)
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' }
     ]
   },

@@ -654,6 +654,85 @@
   min-height: 7rem;
 }
 
+.attachment-section {
+  grid-template-columns: 1fr;
+}
+
+.attachment-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.attachment-picker {
+  cursor: pointer;
+}
+
+.attachment-picker input {
+  display: none;
+}
+
+.attachment-picker span {
+  align-items: center;
+  background: #eef7f1;
+  border: 1px dashed #9fcab0;
+  border-radius: 0.55rem;
+  color: #17633a;
+  display: inline-flex;
+  font-size: 0.88rem;
+  font-weight: 800;
+  min-height: 2.65rem;
+  padding: 0 0.95rem;
+}
+
+.attachment-hint {
+  color: var(--text-color-secondary);
+  font-size: 0.82rem;
+}
+
+.attachment-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.attachment-row {
+  align-items: center;
+  background: #f7fbf8;
+  border: 1px solid #d7e7dd;
+  border-radius: 0.55rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 0.8rem 0.9rem;
+}
+
+.attachment-row strong,
+.attachment-row span {
+  display: block;
+}
+
+.attachment-row strong {
+  color: var(--text-color);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.attachment-row span {
+  color: var(--text-color-secondary);
+  font-size: 0.76rem;
+  margin-top: 0.16rem;
+}
+
+.attachment-row.queued {
+  border-style: dashed;
+}
+
+.attachment-actions {
+  display: flex;
+  gap: 0.2rem;
+}
+
 .budget-preview {
   background: #f7fbf8;
   border: 1px solid #cfe1d5;

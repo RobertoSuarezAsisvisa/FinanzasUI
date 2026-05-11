@@ -761,6 +761,66 @@
             <small *ngIf="isInvalid(field)">Campo requerido o valor invalido.</small>
           </label>
         </section>
+
+        <section class="form-section transaction-section attachment-section">
+          <div class="form-section-head">
+            <i class="pi pi-images"></i>
+            <div>
+              <strong>Evidencias</strong>
+              <span>Fotos o PDF de respaldo para esta transacción.</span>
+            </div>
+          </div>
+
+          <div class="attachment-toolbar">
+            <label class="attachment-picker">
+              <input type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,application/pdf" (change)="onTransactionFilesSelected($event)" />
+              <span>Seleccionar archivos</span>
+            </label>
+
+            <button
+              *ngIf="editingItem && queuedTransactionFiles().length"
+              pButton
+              type="button"
+              icon="pi pi-upload"
+              label="Subir ahora"
+              severity="secondary"
+              outlined
+              [loading]="attachmentLoading()"
+              (click)="uploadQueuedTransactionFiles()"
+            ></button>
+          </div>
+
+          <small class="attachment-hint" *ngIf="!editingItem">
+            Puedes elegir archivos ahora y se subirán cuando guardes la transacción.
+          </small>
+
+          <div class="attachment-list" *ngIf="queuedTransactionFiles().length">
+            <article class="attachment-row queued" *ngFor="let file of queuedTransactionFiles(); let index = index">
+              <div>
+                <strong>{{ file.name }}</strong>
+                <span>{{ attachmentSizeLabel(file.size) }} · pendiente</span>
+              </div>
+              <button pButton type="button" icon="pi pi-times" text rounded (click)="removeQueuedTransactionFile(index)"></button>
+            </article>
+          </div>
+
+          <div class="attachment-list" *ngIf="transactionAttachments().length">
+            <article class="attachment-row" *ngFor="let attachment of transactionAttachments()">
+              <div>
+                <strong>{{ attachment.fileName }}</strong>
+                <span>{{ attachmentSizeLabel(attachment.sizeBytes) }} · {{ attachment.uploadedAt | date: 'medium' }}</span>
+              </div>
+              <div class="attachment-actions">
+                <button pButton type="button" icon="pi pi-eye" text rounded (click)="openTransactionAttachment(attachment)"></button>
+                <button pButton type="button" icon="pi pi-trash" text rounded severity="danger" (click)="deleteTransactionAttachment(attachment)"></button>
+              </div>
+            </article>
+          </div>
+
+          <small class="attachment-hint" *ngIf="editingItem && !transactionAttachments().length && !attachmentLoading()">
+            Esta transacción todavía no tiene evidencias.
+          </small>
+        </section>
       </ng-container>
     </ng-template>
 

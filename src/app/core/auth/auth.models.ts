@@ -18,3 +18,18 @@ export interface LoginPayload {
 export interface RegisterPayload extends LoginPayload {
   displayName?: string | null;
 }
+
+export interface UserApiKeySummary {
+  id: string;
+  name: string;
+  preview: string;
+  createdAt: string;
+  lastUsedAt?: string | null;
+  revokedAt?: string | null;
+  isRevoked: boolean;
+}
+
+export interface CreatedApiKeyResponse {
+  apiKey: string;
+  summary: UserApiKeySummary;
+}

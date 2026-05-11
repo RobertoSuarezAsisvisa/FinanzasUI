@@ -23,8 +23,16 @@ export class ApiService {
     return this.http.post<T>(this.url(path), body).pipe(catchError((error) => this.handleError(error)));
   }
 
+  postForm<T>(path: string, body: FormData): Observable<T> {
+    return this.http.post<T>(this.url(path), body).pipe(catchError((error) => this.handleError(error)));
+  }
+
   put<T>(path: string, body: unknown): Observable<T> {
     return this.http.put<T>(this.url(path), body).pipe(catchError((error) => this.handleError(error)));
+  }
+
+  blob(path: string): Observable<Blob> {
+    return this.http.get(this.url(path), { responseType: 'blob' }).pipe(catchError((error) => this.handleError(error)));
   }
 
   delete<T>(path: string): Observable<T> {
