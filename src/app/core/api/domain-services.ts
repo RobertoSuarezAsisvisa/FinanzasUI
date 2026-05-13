@@ -182,8 +182,8 @@ export class CryptoService {
 export class ReportsService {
   constructor(private readonly api: ApiService) {}
 
-  financeOverview(): Observable<FinanceOverviewSummary> {
-    return this.api.get<FinanceOverviewSummary>('reports/finance-overview');
+  financeOverview(query?: QueryParams): Observable<FinanceOverviewSummary> {
+    return this.api.get<FinanceOverviewSummary>('reports/finance-overview', query);
   }
 
   health(): Observable<unknown> {
@@ -207,12 +207,12 @@ export interface DashboardPayload {
 export class DashboardService {
   constructor(private readonly api: ApiService, private readonly reports: ReportsService) {}
 
-  load(): Observable<DashboardPayload> {
+  load(query?: QueryParams): Observable<DashboardPayload> {
     return forkJoin({
-      overview: this.reports.financeOverview().pipe(catchError(() => of(null))),
+      overview: this.reports.financeOverview(query).pipe(catchError(() => of(null))),
       accounts: this.api.get<AccountSummary[]>('accounts').pipe(catchError(() => of([]))),
       categories: this.api.get<Category[]>('categories').pipe(catchError(() => of([]))),
-      transactions: this.api.get<PagedResult<TransactionSummary>>('transactions', { page: 1, pageSize: 1000 }).pipe(
+      transactions: this.api.get<PagedResult<TransactionSummary>>('transactions', { ...query, page: 1, pageSize: 1000 }).pipe(
         map((response) => response.items),
         catchError(() => of([]))
       ),

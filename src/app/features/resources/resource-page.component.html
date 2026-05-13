@@ -309,6 +309,24 @@
   </div>
 </p-toolbar>
 
+<section class="budget-overview transaction-summary-grid" *ngIf="isTransactionsResource()">
+  <article
+    *ngFor="let metric of transactionMetrics()"
+    class="budget-kpi transaction-summary-card"
+    [class.tone-income]="metric.tone === 'income'"
+    [class.tone-expense]="metric.tone === 'expense'"
+    [class.tone-balance]="metric.tone === 'balance'"
+    [class.tone-transfer]="metric.tone === 'transfer'"
+  >
+    <i [class]="metric.icon" aria-hidden="true"></i>
+    <div>
+      <span>{{ metric.label }}</span>
+      <strong>{{ metric.value }}</strong>
+      <small>{{ metric.detail }}</small>
+    </div>
+  </article>
+</section>
+
 <section class="resource-card">
   <p-table
     [value]="tableItems()"

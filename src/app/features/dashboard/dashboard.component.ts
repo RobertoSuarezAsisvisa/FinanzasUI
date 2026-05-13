@@ -1,6 +1,8 @@
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
 import { PanelModule } from 'primeng/panel';
 import { ProgressBarModule } from 'primeng/progressbar';
@@ -154,9 +156,11 @@ interface DashboardState {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
+    FormsModule,
     PageHeaderComponent,
     MoneyCellComponent,
     ButtonModule,
+    DatePickerModule,
     DialogModule,
     CurrencyPipe,
     DatePipe,
@@ -176,6 +180,8 @@ export class DashboardComponent implements OnInit {
   budgetsDialogVisible = false;
   healthOk = signal(false);
   lastRefreshed = signal<Date | null>(null);
+  dateFrom = signal<Date | null>(null);
+  dateTo = signal<Date | null>(null);
   state = signal<DashboardState | null>(null);
 
   overview = computed(() => this.state()?.overview ?? null);
@@ -187,6 +193,20 @@ export class DashboardComponent implements OnInit {
   purchaseGoals = computed(() => this.state()?.purchaseGoals ?? []);
   savingGoals = computed(() => this.state()?.savingGoals ?? []);
   transactions = computed(() => this.state()?.transactions ?? []);
+  dateRangeLabel = computed(() => {
+    const from = this.dateFrom();
+    const to = this.dateTo();
+
+    if (!from && !to) {
+      return 'Todo el historial';
+    }
+
+    if (from && to) {
+      return `${this.formatDateLabel(from)} - ${this.formatDateLabel(to)}`;
+    }
+
+    return from ? `Desde ${this.formatDateLabel(from)}` : `Hasta ${this.formatDateLabel(to!)}`;
+  });
 
   ready = computed(() => !this.loading() || !!this.state());
   currentPeriod = computed(() => this.periods()[0] ?? null);
@@ -427,7 +447,7 @@ export class DashboardComponent implements OnInit {
     this.loading.set(true);
 
     this.dashboard
-      .load()
+      .load(this.dashboardQuery())
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (state) => {
@@ -454,6 +474,39 @@ export class DashboardComponent implements OnInit {
       next: () => this.healthOk.set(true),
       error: () => this.healthOk.set(false)
     });
+  }
+
+  applyDateFilter(): void {
+    this.load();
+  }
+
+  clearDateFilter(): void {
+    this.dateFrom.set(null);
+    this.dateTo.set(null);
+    this.load();
+  }
+
+  setCurrentMonth(): void {
+    const today = new Date();
+    this.dateFrom.set(new Date(today.getFullYear(), today.getMonth(), 1));
+    this.dateTo.set(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+    this.load();
+  }
+
+  setLastSevenDays(): void {
+    const today = new Date();
+    const from = new Date(today);
+    from.setDate(today.getDate() - 6);
+    this.dateFrom.set(from);
+    this.dateTo.set(today);
+    this.load();
+  }
+
+  setToday(): void {
+    const today = new Date();
+    this.dateFrom.set(today);
+    this.dateTo.set(today);
+    this.load();
   }
 
   flowSeverity(): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
@@ -958,6 +1011,29 @@ export class DashboardComponent implements OnInit {
 
   private isSavingGoal(goal: SavingGoalSummary | PurchaseGoalSummary): goal is SavingGoalSummary {
     return 'currentAmount' in goal;
+  }
+
+  private dashboardQuery(): Record<string, string> {
+    return {
+      dateFrom: this.dateFrom() ? this.startOfDay(this.dateFrom()!).toISOString() : '',
+      dateTo: this.dateTo() ? this.endOfDay(this.dateTo()!).toISOString() : ''
+    };
+  }
+
+  private startOfDay(date: Date): Date {
+    const value = new Date(date);
+    value.setHours(0, 0, 0, 0);
+    return value;
+  }
+
+  private endOfDay(date: Date): Date {
+    const value = new Date(date);
+    value.setHours(23, 59, 59, 999);
+    return value;
+  }
+
+  private formatDateLabel(date: Date): string {
+    return new Intl.DateTimeFormat('es-EC', { dateStyle: 'medium' }).format(date);
   }
 
   private formatAmount(value: number, currency: string): string {

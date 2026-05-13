@@ -30,6 +30,24 @@ import { StatusTagComponent } from '../../shared/status-tag/status-tag.component
 
 type Entity = Record<string, any>;
 type ActionSummaryItem = { label: string; value: string; severity?: 'default' | 'success' | 'warning' };
+type TransactionTotalsSummary = {
+  totalIncome: number;
+  totalExpenses: number;
+  netBalance: number;
+  totalTransfers: number;
+  transactionCount: number;
+  incomeCount: number;
+  expenseCount: number;
+  transferCount: number;
+  averageExpense: number;
+};
+type TransactionMetric = {
+  label: string;
+  value: string;
+  detail: string;
+  tone: 'income' | 'expense' | 'balance' | 'transfer' | 'neutral';
+  icon: string;
+};
 type AmortizationRow = {
   period: number;
   date: Date;
@@ -91,6 +109,7 @@ export class ResourcePageComponent implements OnInit {
   transactionFirst = 0;
   transactionRows = 10;
   totalRecords = signal(0);
+  transactionTotals = signal<TransactionTotalsSummary | null>(null);
   dynamicOptions: Record<string, ResourceOption[]> = {};
   tagFilterValue = '';
   creatingTag = false;
@@ -107,6 +126,51 @@ export class ResourcePageComponent implements OnInit {
   tableFields = computed(() => this.definition.fields.filter((field) => field.table));
   childTableFields = computed(() => this.activeChild?.fields.filter((field) => field.table) ?? []);
   tableItems = computed(() => this.isDebtsResource() ? this.filteredDebtItems(this.appliedDebtFilters()) : this.items());
+  transactionMetrics = computed<TransactionMetric[]>(() => {
+    const totals = this.transactionTotals();
+
+    if (!totals) {
+      return [];
+    }
+
+    return [
+      {
+        label: 'Ingresos',
+        value: this.formatMoney(totals.totalIncome),
+        detail: `${totals.incomeCount} entradas`,
+        tone: 'income',
+        icon: 'pi pi-arrow-down-left'
+      },
+      {
+        label: 'Gastos',
+        value: this.formatMoney(totals.totalExpenses),
+        detail: `${totals.expenseCount} salidas`,
+        tone: 'expense',
+        icon: 'pi pi-arrow-up-right'
+      },
+      {
+        label: 'Balance',
+        value: this.formatMoney(totals.netBalance),
+        detail: totals.netBalance >= 0 ? 'Resultado positivo' : 'Gasto mayor al ingreso',
+        tone: totals.netBalance >= 0 ? 'income' : 'balance',
+        icon: 'pi pi-chart-line'
+      },
+      {
+        label: 'Ticket promedio',
+        value: this.formatMoney(totals.averageExpense),
+        detail: 'Promedio por gasto',
+        tone: 'neutral',
+        icon: 'pi pi-receipt'
+      },
+      {
+        label: 'Movimientos',
+        value: String(totals.transactionCount),
+        detail: `${totals.transferCount} transferencias / ${this.formatMoney(totals.totalTransfers)}`,
+        tone: 'transfer',
+        icon: 'pi pi-arrow-right-arrow-left'
+      }
+    ];
+  });
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -166,6 +230,8 @@ export class ResourcePageComponent implements OnInit {
           query[key] = value;
         }
       });
+
+      this.loadTransactionTotals(query);
     }
 
     this.loading.set(true);
@@ -179,6 +245,15 @@ export class ResourcePageComponent implements OnInit {
         }
       },
       error: (error) => this.fail(error, 'No se pudo cargar la informacion.', () => this.loading.set(false))
+    });
+  }
+
+  private loadTransactionTotals(query: QueryParams): void {
+    const filters = Object.fromEntries(Object.entries(query).filter(([key]) => key !== 'page' && key !== 'pageSize'));
+
+    this.api.get<TransactionTotalsSummary>('transactions/summary', filters).subscribe({
+      next: (summary) => this.transactionTotals.set(summary),
+      error: () => this.transactionTotals.set(null)
     });
   }
 
@@ -1804,7 +1879,7 @@ export class ResourcePageComponent implements OnInit {
     return palette[index];
   }
 
-  private formatMoney(value: number, currency: string): string {
+  private formatMoney(value: number, currency = 'USD'): string {
     return new Intl.NumberFormat('es-EC', {
       style: 'currency',
       currency,

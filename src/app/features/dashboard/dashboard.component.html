@@ -35,6 +35,33 @@
       </dl>
     </section>
 
+    <section class="date-filter-card" aria-label="Filtro de fechas del dashboard">
+      <div class="date-filter-copy">
+        <span class="eyebrow">Rango de análisis</span>
+        <strong>{{ dateRangeLabel() }}</strong>
+      </div>
+
+      <div class="date-filter-controls">
+        <label class="date-field">
+          <span>Desde</span>
+          <p-datepicker [ngModel]="dateFrom()" (ngModelChange)="dateFrom.set($event)" [showIcon]="true" [appendTo]="'body'" [fluid]="true"></p-datepicker>
+        </label>
+
+        <label class="date-field">
+          <span>Hasta</span>
+          <p-datepicker [ngModel]="dateTo()" (ngModelChange)="dateTo.set($event)" [showIcon]="true" [appendTo]="'body'" [fluid]="true"></p-datepicker>
+        </label>
+
+        <div class="date-filter-actions">
+          <button pButton type="button" icon="pi pi-search" label="Filtrar" (click)="applyDateFilter()"></button>
+          <button pButton type="button" icon="pi pi-calendar" label="Este mes" severity="secondary" outlined (click)="setCurrentMonth()"></button>
+          <button pButton type="button" icon="pi pi-clock" label="7 días" severity="secondary" text (click)="setLastSevenDays()"></button>
+          <button pButton type="button" icon="pi pi-sun" label="Hoy" severity="secondary" text (click)="setToday()"></button>
+          <button pButton type="button" icon="pi pi-filter-slash" label="Todo" severity="secondary" text (click)="clearDateFilter()"></button>
+        </div>
+      </div>
+    </section>
+
     <section class="metrics-grid">
       <article
         *ngFor="let card of overviewCards()"
