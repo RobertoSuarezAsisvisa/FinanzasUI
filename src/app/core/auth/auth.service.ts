@@ -10,6 +10,7 @@ import { AuthResponse, AuthUser, LoginPayload, RegisterPayload } from './auth.mo
 
 const TOKEN_KEY = 'finanzas.auth.token';
 const USER_KEY = 'finanzas.auth.user';
+const EXPIRES_AT_KEY = 'finanzas.auth.expiresAt';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -17,13 +18,14 @@ export class AuthService {
   private readonly router = inject(Router);
   private readonly baseUrl = environment.apiBaseUrl.replace(/\/$/, '');
   private readonly tokenState = signal<string | null>(localStorage.getItem(TOKEN_KEY));
+  private readonly expiresAtState = signal<string | null>(localStorage.getItem(EXPIRES_AT_KEY));
   private readonly userState = signal<AuthUser | null>(this.readStoredUser());
   private firebaseApp: FirebaseApp | null = null;
   private firebaseAuth: Auth | null = null;
 
   readonly token = this.tokenState.asReadonly();
   readonly user = this.userState.asReadonly();
-  readonly isAuthenticated = computed(() => !!this.tokenState());
+  readonly isAuthenticated = computed(() => !!this.tokenState() && !this.isTokenExpired());
 
   login(payload: LoginPayload): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/auth/login`, payload).pipe(tap((response) => this.storeSession(response)));
@@ -46,16 +48,73 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(EXPIRES_AT_KEY);
     this.tokenState.set(null);
+    this.expiresAtState.set(null);
     this.userState.set(null);
     this.router.navigate(['/login']);
+  }
+
+  validToken(): string | null {
+    const token = this.tokenState();
+    if (!token) {
+      return null;
+    }
+
+    if (this.isTokenExpired()) {
+      this.logout();
+      return null;
+    }
+
+    return token;
+  }
+
+  handleUnauthorized(): void {
+    if (this.tokenState()) {
+      this.logout();
+    }
   }
 
   private storeSession(response: AuthResponse): void {
     localStorage.setItem(TOKEN_KEY, response.accessToken);
     localStorage.setItem(USER_KEY, JSON.stringify(response.user));
+    localStorage.setItem(EXPIRES_AT_KEY, response.expiresAt);
     this.tokenState.set(response.accessToken);
+    this.expiresAtState.set(response.expiresAt);
     this.userState.set(response.user);
+  }
+
+  private isTokenExpired(): boolean {
+    const expiresAt = this.expiresAtState() ?? this.jwtExpiration(this.tokenState());
+    if (!expiresAt) {
+      return false;
+    }
+
+    const expiresAtMs = Date.parse(expiresAt);
+    if (Number.isNaN(expiresAtMs)) {
+      return false;
+    }
+
+    return Date.now() >= expiresAtMs - 30_000;
+  }
+
+  private jwtExpiration(token: string | null): string | null {
+    if (!token) {
+      return null;
+    }
+
+    const [, payload] = token.split('.');
+    if (!payload) {
+      return null;
+    }
+
+    try {
+      const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const decoded = JSON.parse(atob(normalized)) as { exp?: number };
+      return decoded.exp ? new Date(decoded.exp * 1000).toISOString() : null;
+    } catch {
+      return null;
+    }
   }
 
   private readStoredUser(): AuthUser | null {

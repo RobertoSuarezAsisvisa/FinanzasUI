@@ -148,3 +148,17 @@ input,
     margin: auto;
   }
 }
+
+@media (max-width: 420px) {
+  .auth-layout {
+    padding: 0.75rem;
+  }
+
+  .auth-panel {
+    padding: 1.1rem;
+  }
+
+  h1 {
+    font-size: 1.45rem;
+  }
+}

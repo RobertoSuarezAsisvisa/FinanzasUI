@@ -150,6 +150,11 @@ dd {
     grid-template-columns: 1fr;
   }
 
+  .panel-header,
+  .generated-copy {
+    flex-direction: column;
+  }
+
   .row-actions {
     flex-direction: row;
     flex-wrap: wrap;
@@ -157,5 +162,29 @@ dd {
 
   dl {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .panel {
+    padding: 1rem;
+  }
+
+  .actions,
+  .generated-actions,
+  .row-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .actions .p-button,
+  .generated-actions .p-button,
+  .row-actions .p-button {
+    width: 100%;
+  }
+
+  .api-key-meta code {
+    display: block;
+    overflow-wrap: anywhere;
   }
 }

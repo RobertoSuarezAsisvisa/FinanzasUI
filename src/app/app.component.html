@@ -5,6 +5,8 @@
   <router-outlet></router-outlet>
 } @else {
 <div class="app-shell" [class.sidebar-collapsed]="sidebarCollapsed">
+  <button type="button" class="sidebar-backdrop" [class.open]="menuOpen" aria-label="Cerrar menu lateral" (click)="menuOpen = false"></button>
+
   <aside class="app-sidebar" [class.open]="menuOpen">
     <a class="brand" routerLink="/dashboard" (click)="menuOpen = false">
       <span class="brand-mark">F</span>
