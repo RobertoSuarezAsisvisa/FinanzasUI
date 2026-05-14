@@ -370,6 +370,15 @@
             ></app-status-tag>
           </ng-template>
           <ng-template #plainCell>
+            <span
+              *ngIf="isTransactionTypeField(field); else regularPlainCell"
+              style="align-items: center; display: inline-flex; gap: 0.55rem;"
+            >
+              <i [class]="transactionTypeIcon(item[field.key])" style="font-size: 0.78rem;" aria-hidden="true"></i>
+              <p-tag [value]="transactionTypeLabel(item[field.key])" [severity]="transactionTypeSeverity(item[field.key])"></p-tag>
+            </span>
+          </ng-template>
+          <ng-template #regularPlainCell>
             <span *ngIf="field.type === 'color'" class="color-cell">
               <span class="color-dot" [style.background]="item[field.key]"></span>{{ item[field.key] || '-' }}
             </span>

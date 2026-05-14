@@ -16,6 +16,7 @@ import { AuthService } from './core/auth/auth.service';
 })
 export class AppComponent {
   menuOpen = false;
+  sidebarCollapsed = false;
 
   constructor(readonly auth: AuthService, private readonly router: Router) {}
 
@@ -38,6 +39,11 @@ export class AppComponent {
 
   isAuthPage(): boolean {
     return this.router.url.startsWith('/login') || this.router.url.startsWith('/register');
+  }
+
+  toggleSidebar(): void {
+    this.menuOpen = !this.menuOpen;
+    this.sidebarCollapsed = !this.sidebarCollapsed;
   }
 
   logout(): void {

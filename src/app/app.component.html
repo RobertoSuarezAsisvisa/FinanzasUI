@@ -4,11 +4,11 @@
 @if (isAuthPage()) {
   <router-outlet></router-outlet>
 } @else {
-<div class="app-shell">
+<div class="app-shell" [class.sidebar-collapsed]="sidebarCollapsed">
   <aside class="app-sidebar" [class.open]="menuOpen">
     <a class="brand" routerLink="/dashboard" (click)="menuOpen = false">
       <span class="brand-mark">F</span>
-      <span>
+      <span class="brand-copy">
         <strong>Finanzas</strong>
         <small>Control personal</small>
       </span>
@@ -25,7 +25,16 @@
   <div class="app-main">
     <p-toolbar styleClass="topbar">
       <div class="topbar-left">
-        <button pButton type="button" icon="pi pi-bars" text rounded class="menu-button" (click)="menuOpen = !menuOpen"></button>
+        <button
+          pButton
+          type="button"
+          [icon]="sidebarCollapsed ? 'pi pi-angle-right' : 'pi pi-bars'"
+          text
+          rounded
+          class="menu-button"
+          [attr.aria-label]="sidebarCollapsed ? 'Abrir menu lateral' : 'Cerrar menu lateral'"
+          (click)="toggleSidebar()"
+        ></button>
         <span>Finanzas UI</span>
       </div>
       <div class="topbar-actions">

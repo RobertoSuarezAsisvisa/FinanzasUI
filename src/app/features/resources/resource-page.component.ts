@@ -531,6 +531,40 @@ export class ResourcePageComponent implements OnInit {
     return this.isDebtsResource() && field.key === 'progress';
   }
 
+  isTransactionTypeField(field: ResourceField): boolean {
+    return this.isTransactionsResource() && field.key === 'type';
+  }
+
+  transactionTypeLabel(value: unknown): string {
+    const labels: Record<string, string> = {
+      Income: 'Ingreso',
+      Expense: 'Gasto',
+      Transfer: 'Transferencia'
+    };
+
+    return labels[String(value)] ?? String(value ?? '-');
+  }
+
+  transactionTypeIcon(value: unknown): string {
+    const icons: Record<string, string> = {
+      Income: 'pi pi-arrow-down-left',
+      Expense: 'pi pi-arrow-up-right',
+      Transfer: 'pi pi-arrow-right-arrow-left'
+    };
+
+    return icons[String(value)] ?? 'pi pi-circle';
+  }
+
+  transactionTypeSeverity(value: unknown): 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast' {
+    const severities: Record<string, 'success' | 'info' | 'danger'> = {
+      Income: 'success',
+      Expense: 'danger',
+      Transfer: 'info'
+    };
+
+    return severities[String(value)] ?? 'secondary';
+  }
+
   showCreate(): boolean {
     return this.definition.canCreate !== false;
   }
