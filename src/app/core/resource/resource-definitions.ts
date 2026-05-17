@@ -99,7 +99,7 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
     path: 'tags',
     fields: [
       { key: 'name', label: 'Nombre', type: 'text', required: true, table: true },
-      { key: 'color', label: 'Color', type: 'color', required: true, table: true }
+      { key: 'color', label: 'Color', type: 'color', required: true, table: true, defaultValue: '#16794a' }
     ]
   },
   savingGoals: {

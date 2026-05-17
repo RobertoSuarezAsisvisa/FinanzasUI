@@ -1609,6 +1609,8 @@ export class ResourcePageComponent implements OnInit {
           .split(',')
           .map((entry) => entry.trim())
           .filter(Boolean);
+      } else if (field.type === 'color') {
+        body[field.key] = this.normalizeColorValue(value);
       } else if (field.type === 'multiselect') {
         body[field.key] = Array.isArray(value) ? value : [];
       } else {
@@ -1911,6 +1913,16 @@ export class ResourcePageComponent implements OnInit {
     const index = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0) % palette.length;
 
     return palette[index];
+  }
+
+  private normalizeColorValue(value: unknown): string | null {
+    const color = String(value ?? '').trim();
+
+    if (!color) {
+      return null;
+    }
+
+    return color.startsWith('#') ? color : `#${color}`;
   }
 
   private formatMoney(value: number, currency = 'USD'): string {
