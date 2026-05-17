@@ -29,6 +29,8 @@ import { MoneyCellComponent } from '../../shared/money-cell/money-cell.component
 
 interface FlowPoint {
   label: string;
+  fullLabel: string;
+  dateKey: string;
   income: number;
   expense: number;
   net: number;
@@ -44,6 +46,9 @@ interface FlowChart {
   netPath: string;
   points: FlowPoint[];
   subtitle: string;
+  totalIncome: number;
+  totalExpense: number;
+  totalNet: number;
 }
 
 interface AccountTile {
@@ -148,6 +153,7 @@ interface DashboardState {
   purchaseGoals: PurchaseGoalSummary[];
   savingGoals: SavingGoalSummary[];
   transactions: TransactionSummary[];
+  weeklyTransactions: TransactionSummary[];
 }
 
 @Component({
@@ -193,6 +199,7 @@ export class DashboardComponent implements OnInit {
   purchaseGoals = computed(() => this.state()?.purchaseGoals ?? []);
   savingGoals = computed(() => this.state()?.savingGoals ?? []);
   transactions = computed(() => this.state()?.transactions ?? []);
+  weeklyTransactions = computed(() => this.state()?.weeklyTransactions ?? []);
   dateRangeLabel = computed(() => {
     const from = this.dateFrom();
     const to = this.dateTo();
@@ -291,7 +298,7 @@ export class DashboardComponent implements OnInit {
       .slice(0, 4)
       .map((debt) => this.toDebtTile(debt))
   );
-  flowChart = computed(() => this.buildFlowChart(this.transactions()));
+  flowChart = computed(() => this.buildFlowChart(this.weeklyTransactions()));
   transactionMix = computed(() => this.buildTransactionMix(this.transactions()));
   expenseByCategory = computed(() => this.allExpenseByCategory().slice(0, 5));
   allExpenseByCategory = computed(() => this.buildExpenseByCategory(this.transactions()));
@@ -447,7 +454,7 @@ export class DashboardComponent implements OnInit {
     this.loading.set(true);
 
     this.dashboard
-      .load(this.dashboardQuery())
+      .load(this.dashboardQuery(), this.currentWeekQuery())
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (state) => {
@@ -464,7 +471,8 @@ export class DashboardComponent implements OnInit {
             periods: [],
             purchaseGoals: [],
             savingGoals: [],
-            transactions: []
+            transactions: [],
+            weeklyTransactions: []
           });
           this.lastRefreshed.set(new Date());
         }
@@ -510,12 +518,12 @@ export class DashboardComponent implements OnInit {
   }
 
   flowSeverity(): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
-    const points = this.flowChart().points;
-    if (!points.length) {
+    const chart = this.flowChart();
+    if (!chart.points.length) {
       return 'secondary';
     }
 
-    return points.at(-1)!.net >= 0 ? 'success' : 'danger';
+    return chart.totalNet >= 0 ? 'success' : 'danger';
   }
 
   flowHeadline(): string {
@@ -524,25 +532,24 @@ export class DashboardComponent implements OnInit {
       return 'Aun no hay movimientos suficientes';
     }
 
-    const latest = chart.points.at(-1)!;
-    const previous = chart.points.at(-2);
-    const diff = previous ? latest.net - previous.net : latest.net;
+    const today = this.todayFlowPoint() ?? chart.points.at(-1)!;
+    const activeDays = chart.points.filter((point) => point.income > 0 || point.expense > 0).length;
 
-    if (latest.net >= 0) {
-      return diff >= 0 ? 'Flujo positivo y en mejora' : 'Flujo positivo, pero perdiendo ritmo';
+    if (chart.totalNet >= 0) {
+      return activeDays > 1 ? 'La semana va en positivo' : 'Semana positiva por ahora';
     }
 
-    return diff >= 0 ? 'Los gastos siguen por encima' : 'Los gastos están acelerándose';
+    return today.net < 0 ? 'Hoy los gastos pesan más' : 'La semana sigue en negativo';
   }
 
   flowSubtext(): string {
     const chart = this.flowChart();
     if (!chart.points.length) {
-      return 'Todavía no hay transacciones para construir la curva mensual.';
+      return 'Todavía no hay transacciones para construir la curva diaria de esta semana.';
     }
 
-    const latest = chart.points.at(-1)!;
-    return `Último mes: ingresos ${this.formatAmount(latest.income, 'USD')} y gastos ${this.formatAmount(latest.expense, 'USD')}.`;
+    const todayPoint = this.todayFlowPoint() ?? chart.points.at(-1)!;
+    return `Hoy: ingresos ${this.formatAmount(todayPoint.income, 'USD')}, gastos ${this.formatAmount(todayPoint.expense, 'USD')} y neto ${this.formatAmount(todayPoint.net, 'USD')}.`;
   }
 
   flowBadgeLabel(): string {
@@ -572,7 +579,7 @@ export class DashboardComponent implements OnInit {
   }
 
   flowTooltip(): string {
-    return 'Evalúa el último punto del flujo mensual: compara ingresos contra gastos para indicar si el periodo está positivo o requiere atención.';
+    return 'Evalúa el flujo diario de la semana actual: compara ingresos contra gastos y muestra el neto por día.';
   }
 
   mixTooltip(item: BiSlice): string {
@@ -585,6 +592,10 @@ export class DashboardComponent implements OnInit {
 
   budgetTooltip(budget: BudgetUsage): string {
     return `${budget.name}: ${this.formatAmount(budget.spent, 'USD')} usados de ${this.formatAmount(budget.limit, 'USD')}. Queda ${this.formatAmount(budget.remaining, 'USD')}. ${budget.transactions.length} transacciones.`;
+  }
+
+  flowPointTooltip(point: FlowPoint): string {
+    return `${point.fullLabel}: ingresos ${this.formatAmount(point.income, 'USD')}, gastos ${this.formatAmount(point.expense, 'USD')} y neto ${this.formatAmount(point.net, 'USD')}.`;
   }
 
   accountPurposeLabel(purpose: string): string {
@@ -735,19 +746,21 @@ export class DashboardComponent implements OnInit {
   }
 
   private buildFlowChart(transactions: TransactionSummary[]): FlowChart {
-    const months = this.buildMonthWindows(6);
-    const points = months.map((date, index) => {
-      const monthlyTransactions = transactions.filter((transaction) => this.isSameMonth(transaction.transactionDate, date));
-      const income = this.sumTransactions(monthlyTransactions, 'Income');
-      const expense = this.sumTransactions(monthlyTransactions, 'Expense');
+    const days = this.buildCurrentWeekDays();
+    const points = days.map((date, index) => {
+      const dailyTransactions = transactions.filter((transaction) => this.isSameLocalDay(transaction.transactionDate, date));
+      const income = this.sumTransactions(dailyTransactions, 'Income');
+      const expense = this.sumTransactions(dailyTransactions, 'Expense');
       const net = income - expense;
 
       return {
-        label: new Intl.DateTimeFormat('es-EC', { month: 'short' }).format(date),
+        label: new Intl.DateTimeFormat('es-EC', { weekday: 'short' }).format(date),
+        fullLabel: new Intl.DateTimeFormat('es-EC', { weekday: 'long', day: 'numeric', month: 'short' }).format(date),
+        dateKey: this.localDateKey(date),
         income,
         expense,
         net,
-        x: 78 + index * 106,
+        x: 68 + index * 96,
         incomeHeight: 0,
         expenseHeight: 0,
         incomeY: 0,
@@ -763,8 +776,8 @@ export class DashboardComponent implements OnInit {
     const netBaseline = 150;
 
     const renderedPoints = points.map((point) => {
-      const incomeHeight = Math.max(6, Math.round((point.income / maxValue) * chartHeight));
-      const expenseHeight = Math.max(6, Math.round((point.expense / maxValue) * chartHeight));
+      const incomeHeight = point.income > 0 ? Math.max(6, Math.round((point.income / maxValue) * chartHeight)) : 0;
+      const expenseHeight = point.expense > 0 ? Math.max(6, Math.round((point.expense / maxValue) * chartHeight)) : 0;
       const netY = Math.min(228, Math.max(72, Math.round(netBaseline - (point.net / maxNet) * 76)));
 
       return {
@@ -777,22 +790,31 @@ export class DashboardComponent implements OnInit {
       };
     });
 
+    const totalIncome = points.reduce((sum, point) => sum + point.income, 0);
+    const totalExpense = points.reduce((sum, point) => sum + point.expense, 0);
+    const totalNet = totalIncome - totalExpense;
+
     return {
       netPath: renderedPoints.map((point) => `${point.x + 2},${point.netY}`).join(' '),
       points: renderedPoints,
-      subtitle: `${this.formatAmount(points.reduce((sum, point) => sum + point.income, 0), 'USD')} en ingresos y ${this.formatAmount(points.reduce((sum, point) => sum + point.expense, 0), 'USD')} en gastos durante los últimos 6 meses.`
+      subtitle: `${this.formatAmount(totalIncome, 'USD')} en ingresos, ${this.formatAmount(totalExpense, 'USD')} en gastos y ${this.formatAmount(totalNet, 'USD')} neto esta semana.`,
+      totalIncome,
+      totalExpense,
+      totalNet
     };
   }
 
-  private buildMonthWindows(count: number): Date[] {
-    const now = new Date();
-    const months: Date[] = [];
+  private buildCurrentWeekDays(): Date[] {
+    const start = this.startOfCurrentWeek();
+    const days: Date[] = [];
 
-    for (let index = count - 1; index >= 0; index--) {
-      months.push(new Date(now.getFullYear(), now.getMonth() - index, 1));
+    for (let index = 0; index < 7; index++) {
+      const day = new Date(start);
+      day.setDate(start.getDate() + index);
+      days.push(day);
     }
 
-    return months;
+    return days;
   }
 
   private buildTransactionMix(transactions: TransactionSummary[]): BiSlice[] {
@@ -988,9 +1010,13 @@ export class DashboardComponent implements OnInit {
     return Number.isNaN(parsed.getTime()) ? Number.MAX_SAFE_INTEGER : parsed.getTime();
   }
 
-  private isSameMonth(value: string, month: Date): boolean {
+  private isSameLocalDay(value: string, day: Date): boolean {
     const parsed = new Date(value);
-    return parsed.getFullYear() === month.getFullYear() && parsed.getMonth() === month.getMonth();
+    return (
+      parsed.getFullYear() === day.getFullYear() &&
+      parsed.getMonth() === day.getMonth() &&
+      parsed.getDate() === day.getDate()
+    );
   }
 
   private sum<T extends object>(items: T[], key: keyof T & string): number {
@@ -1020,6 +1046,34 @@ export class DashboardComponent implements OnInit {
     };
   }
 
+  private currentWeekQuery(): Record<string, string> {
+    return {
+      dateFrom: this.startOfCurrentWeek().toISOString(),
+      dateTo: this.endOfCurrentWeek().toISOString()
+    };
+  }
+
+  private startOfCurrentWeek(): Date {
+    const today = new Date();
+    const start = this.startOfDay(today);
+    const day = start.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    start.setDate(start.getDate() + mondayOffset);
+    return start;
+  }
+
+  private endOfCurrentWeek(): Date {
+    const end = this.startOfCurrentWeek();
+    end.setDate(end.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+    return end;
+  }
+
+  private todayFlowPoint(): FlowPoint | null {
+    const todayKey = this.localDateKey(new Date());
+    return this.flowChart().points.find((point) => point.dateKey === todayKey) ?? null;
+  }
+
   private startOfDay(date: Date): Date {
     const value = new Date(date);
     value.setHours(0, 0, 0, 0);
@@ -1034,6 +1088,13 @@ export class DashboardComponent implements OnInit {
 
   private formatDateLabel(date: Date): string {
     return new Intl.DateTimeFormat('es-EC', { dateStyle: 'medium' }).format(date);
+  }
+
+  private localDateKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private formatAmount(value: number, currency: string): string {

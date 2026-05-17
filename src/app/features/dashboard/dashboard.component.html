@@ -219,8 +219,8 @@
       <article class="dashboard-card flow-card">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Flujo mensual</p>
-            <h3>Ingresos vs gastos</h3>
+            <p class="eyebrow">Flujo diario</p>
+            <h3>Semana actual</h3>
             <p class="flow-summary">{{ flowChart().subtitle }}</p>
           </div>
           <span
@@ -235,7 +235,7 @@
         </div>
 
       <div class="chart-shell" *ngIf="flowChart().points.length; else emptyChart">
-        <svg viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" class="flow-chart" role="img" aria-label="Gráfica de flujo mensual">
+        <svg viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" class="flow-chart" role="img" aria-label="Gráfica de flujo diario de la semana actual">
           <defs>
             <linearGradient id="incomeFill" x1="0" x2="0" y1="0" y2="1">
               <stop offset="0%" stop-color="#1f7a4d" stop-opacity="0.92" />
@@ -256,7 +256,7 @@
 
           <polyline class="net-line" [attr.points]="flowChart().netPath"></polyline>
 
-          <g *ngFor="let point of flowChart().points">
+          <g *ngFor="let point of flowChart().points" [pTooltip]="flowPointTooltip(point)" tooltipPosition="top">
             <rect class="income-bar" [attr.x]="point.x - 24" [attr.y]="point.incomeY" width="18" [attr.height]="point.incomeHeight" rx="5"></rect>
             <rect class="expense-bar" [attr.x]="point.x + 2" [attr.y]="point.expenseY" width="18" [attr.height]="point.expenseHeight" rx="5"></rect>
             <circle class="net-point" [attr.cx]="point.x + 2" [attr.cy]="point.netY" r="4"></circle>
@@ -283,6 +283,33 @@
         <span><i class="legend-dot income" aria-hidden="true"></i> Ingresos</span>
         <span><i class="legend-dot expense" aria-hidden="true"></i> Gastos</span>
         <span><i class="legend-line" aria-hidden="true"></i> Neto</span>
+      </div>
+
+      <div class="daily-flow-list" aria-label="Detalle diario del flujo semanal">
+        <article
+          *ngFor="let point of flowChart().points"
+          class="daily-flow-item"
+          [class.negative]="point.net < 0"
+          [class.positive]="point.net >= 0"
+          [pTooltip]="flowPointTooltip(point)"
+          tooltipPosition="top"
+        >
+          <span>{{ point.fullLabel }}</span>
+          <dl>
+            <div>
+              <dt>Ingresos</dt>
+              <dd>{{ point.income | currency: 'USD' : 'symbol' : '1.0-2' }}</dd>
+            </div>
+            <div>
+              <dt>Gastos</dt>
+              <dd>{{ point.expense | currency: 'USD' : 'symbol' : '1.0-2' }}</dd>
+            </div>
+            <div>
+              <dt>Neto</dt>
+              <dd>{{ point.net | currency: 'USD' : 'symbol' : '1.0-2' }}</dd>
+            </div>
+          </dl>
+        </article>
       </div>
       </article>
     </section>

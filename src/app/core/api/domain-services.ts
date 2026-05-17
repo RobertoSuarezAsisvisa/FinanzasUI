@@ -196,6 +196,7 @@ export interface DashboardPayload {
   accounts: AccountSummary[];
   categories: Category[];
   transactions: TransactionSummary[];
+  weeklyTransactions: TransactionSummary[];
   budgets: BudgetSummary[];
   savingGoals: SavingGoalSummary[];
   purchaseGoals: PurchaseGoalSummary[];
@@ -207,12 +208,16 @@ export interface DashboardPayload {
 export class DashboardService {
   constructor(private readonly api: ApiService, private readonly reports: ReportsService) {}
 
-  load(query?: QueryParams): Observable<DashboardPayload> {
+  load(query?: QueryParams, weeklyQuery?: QueryParams): Observable<DashboardPayload> {
     return forkJoin({
       overview: this.reports.financeOverview(query).pipe(catchError(() => of(null))),
       accounts: this.api.get<AccountSummary[]>('accounts').pipe(catchError(() => of([]))),
       categories: this.api.get<Category[]>('categories').pipe(catchError(() => of([]))),
       transactions: this.api.get<PagedResult<TransactionSummary>>('transactions', { ...query, page: 1, pageSize: 1000 }).pipe(
+        map((response) => response.items),
+        catchError(() => of([]))
+      ),
+      weeklyTransactions: this.api.get<PagedResult<TransactionSummary>>('transactions', { ...weeklyQuery, page: 1, pageSize: 1000 }).pipe(
         map((response) => response.items),
         catchError(() => of([]))
       ),

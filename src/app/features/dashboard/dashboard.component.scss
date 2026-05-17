@@ -760,6 +760,83 @@
   gap: 0.45rem;
 }
 
+.daily-flow-list {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  margin-top: 0.85rem;
+}
+
+.daily-flow-item {
+  background: #ffffff;
+  border: 1px solid var(--dash-border);
+  border-radius: 0.55rem;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0.7rem;
+  position: relative;
+}
+
+.daily-flow-item::before {
+  background: var(--dash-green);
+  content: '';
+  height: 0.18rem;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.daily-flow-item.negative::before {
+  background: var(--dash-red);
+}
+
+.daily-flow-item > span {
+  color: var(--dash-ink);
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1.25;
+  margin-bottom: 0.55rem;
+  overflow-wrap: anywhere;
+  text-transform: capitalize;
+}
+
+.daily-flow-item dl {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.daily-flow-item div {
+  min-width: 0;
+}
+
+.daily-flow-item dt {
+  color: var(--dash-muted);
+  font-size: 0.64rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.daily-flow-item dd {
+  color: var(--dash-ink);
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.2;
+  margin: 0.12rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.daily-flow-item.negative dl div:last-child dd {
+  color: var(--dash-red);
+}
+
+.daily-flow-item.positive dl div:last-child dd {
+  color: var(--dash-green);
+}
+
 .legend-dot {
   border-radius: 999px;
   display: inline-block;
@@ -1057,6 +1134,7 @@
   .metrics-grid,
   .bi-metrics,
   .bi-grid,
+  .daily-flow-list,
   .system-metrics,
   .panel-summary,
   .detail-grid,
