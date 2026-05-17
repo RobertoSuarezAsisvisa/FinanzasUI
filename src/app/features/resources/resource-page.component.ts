@@ -619,6 +619,42 @@ export class ResourcePageComponent implements OnInit {
     return this.definition.key === 'accounts';
   }
 
+  activeAccounts(): Entity[] {
+    return this.items().filter((account) => account['isActive'] !== false);
+  }
+
+  activeAccountCount(): number {
+    return this.activeAccounts().length;
+  }
+
+  inactiveAccountCount(): number {
+    return this.items().filter((account) => account['isActive'] === false).length;
+  }
+
+  activeAccountBalanceTotal(): number {
+    return this.activeAccounts().reduce((total, account) => total + Number(account['balance'] ?? 0), 0);
+  }
+
+  accountBalanceByPurpose(purpose: string): number {
+    return this.activeAccounts()
+      .filter((account) => this.accountPurpose(account) === purpose)
+      .reduce((total, account) => total + Number(account['balance'] ?? 0), 0);
+  }
+
+  accountCountByPurpose(purpose: string): number {
+    return this.activeAccounts().filter((account) => this.accountPurpose(account) === purpose).length;
+  }
+
+  accountOverviewStatusLabel(): string {
+    const count = this.activeAccountCount();
+
+    if (count === 0) {
+      return 'Sin cuentas activas';
+    }
+
+    return `${count} cuentas activas incluidas`;
+  }
+
   isTransactionsResource(): boolean {
     return this.definition.key === 'transactions';
   }
@@ -1138,6 +1174,16 @@ export class ResourcePageComponent implements OnInit {
     }
 
     return `Saldo disponible: ${this.formatMoney(option.balance, option.currency ?? 'USD')}`;
+  }
+
+  private accountPurpose(account: Entity): string {
+    const purpose = String(account['purpose'] ?? '').trim();
+
+    if (['Spending', 'Savings', 'Investment', 'Reserved'].includes(purpose)) {
+      return purpose;
+    }
+
+    return 'Spending';
   }
 
   showContributionActionSummary(): boolean {

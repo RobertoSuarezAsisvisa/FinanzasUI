@@ -81,6 +81,39 @@
   </div>
 </p-toolbar>
 
+<section class="budget-overview" *ngIf="isAccountsResource()">
+  <article class="budget-kpi">
+    <span>Disponible para gastar</span>
+    <strong>{{ accountBalanceByPurpose('Spending') | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ accountCountByPurpose('Spending') }} cuentas disponibles</small>
+  </article>
+  <article class="budget-kpi">
+    <span>Ahorros</span>
+    <strong>{{ accountBalanceByPurpose('Savings') | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ accountCountByPurpose('Savings') }} cuentas de ahorro</small>
+  </article>
+  <article class="budget-kpi">
+    <span>Inversión</span>
+    <strong>{{ accountBalanceByPurpose('Investment') | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ accountCountByPurpose('Investment') }} cuentas de inversión</small>
+  </article>
+  <article class="budget-kpi">
+    <span>Reservado</span>
+    <strong>{{ accountBalanceByPurpose('Reserved') | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ accountCountByPurpose('Reserved') }} cuentas reservadas</small>
+  </article>
+  <article class="budget-kpi">
+    <span>Total activo</span>
+    <strong>{{ activeAccountBalanceTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ accountOverviewStatusLabel() }}</small>
+  </article>
+  <article class="budget-kpi">
+    <span>Cuentas activas</span>
+    <strong>{{ activeAccountCount() }}</strong>
+    <small>{{ inactiveAccountCount() }} inactivas</small>
+  </article>
+</section>
+
 <section class="saving-goals-overview" *ngIf="isSavingGoalsResource()">
   <article class="saving-goal-kpi">
     <span>Ahorrado</span>
