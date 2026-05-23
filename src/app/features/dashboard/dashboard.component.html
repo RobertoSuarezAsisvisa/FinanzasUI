@@ -220,22 +220,46 @@
         <div class="section-head">
           <div>
             <p class="eyebrow">Flujo diario</p>
-            <h3>Semana actual</h3>
+            <h3>{{ selectedWeekTitle() }}</h3>
             <p class="flow-summary">{{ flowChart().subtitle }}</p>
           </div>
           <span
             class="status-pill"
+            [class.loading]="flowLoading()"
             [class.good]="flowSeverity() === 'success'"
             [class.bad]="flowSeverity() === 'danger'"
             [pTooltip]="flowTooltip()"
             tooltipPosition="left"
           >
-            {{ flowBadgeLabel() }}
+            {{ flowLoading() ? 'Cargando' : flowBadgeLabel() }}
           </span>
         </div>
 
+        <div class="week-selector" aria-label="Seleccionar semana del mes actual">
+          <button
+            *ngFor="let week of currentMonthWeeks(); let index = index"
+            type="button"
+            class="week-option"
+            [class.active]="selectedWeekIndex() === index"
+            [disabled]="flowLoading()"
+            [attr.aria-pressed]="selectedWeekIndex() === index"
+            [pTooltip]="week.rangeLabel"
+            tooltipPosition="top"
+            (click)="selectWeek(index)"
+          >
+            <span>{{ week.label }}</span>
+            <small>{{ week.rangeLabel }}</small>
+          </button>
+        </div>
+
+      <div class="empty-state inline flow-loading-banner" *ngIf="flowLoading()" role="status" aria-live="polite">
+        <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        <span>Cargando datos de la semana seleccionada...</span>
+      </div>
+
+      <div class="flow-content" [class.is-loading]="flowLoading()" [attr.aria-busy]="flowLoading()">
       <div class="chart-shell" *ngIf="flowChart().points.length; else emptyChart">
-        <svg viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" class="flow-chart" role="img" aria-label="Gráfica de flujo diario de la semana actual">
+        <svg viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" class="flow-chart" role="img" aria-label="Gráfica de flujo diario de la semana seleccionada">
           <defs>
             <linearGradient id="incomeFill" x1="0" x2="0" y1="0" y2="1">
               <stop offset="0%" stop-color="#1f7a4d" stop-opacity="0.92" />
@@ -256,7 +280,18 @@
 
           <polyline class="net-line" [attr.points]="flowChart().netPath"></polyline>
 
-          <g *ngFor="let point of flowChart().points" [pTooltip]="flowPointTooltip(point)" tooltipPosition="top">
+          <g
+            *ngFor="let point of flowChart().points"
+            class="flow-point-group"
+            role="button"
+            tabindex="0"
+            [attr.aria-label]="'Ver transacciones de ' + point.fullLabel"
+            [pTooltip]="flowPointTooltip(point)"
+            tooltipPosition="top"
+            (click)="openDailyTransactions(point)"
+            (keydown.enter)="openDailyTransactions(point)"
+            (keydown.space)="openDailyTransactions(point)"
+          >
             <rect class="income-bar" [attr.x]="point.x - 24" [attr.y]="point.incomeY" width="18" [attr.height]="point.incomeHeight" rx="5"></rect>
             <rect class="expense-bar" [attr.x]="point.x + 2" [attr.y]="point.expenseY" width="18" [attr.height]="point.expenseHeight" rx="5"></rect>
             <circle class="net-point" [attr.cx]="point.x + 2" [attr.cy]="point.netY" r="4"></circle>
@@ -286,13 +321,16 @@
       </div>
 
       <div class="daily-flow-list" aria-label="Detalle diario del flujo semanal">
-        <article
+        <button
           *ngFor="let point of flowChart().points"
+          type="button"
           class="daily-flow-item"
           [class.negative]="point.net < 0"
           [class.positive]="point.net >= 0"
           [pTooltip]="flowPointTooltip(point)"
           tooltipPosition="top"
+          [disabled]="flowLoading()"
+          (click)="openDailyTransactions(point)"
         >
           <span>{{ point.fullLabel }}</span>
           <dl>
@@ -309,7 +347,8 @@
               <dd>{{ point.net | currency: 'USD' : 'symbol' : '1.0-2' }}</dd>
             </div>
           </dl>
-        </article>
+        </button>
+      </div>
       </div>
       </article>
     </section>
@@ -634,5 +673,109 @@
     <ng-template #emptyBudgetModal>
       <div class="empty-state inline"><i class="pi pi-chart-pie" aria-hidden="true"></i><span>Sin presupuestos activos.</span></div>
     </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    [(visible)]="dailyTransactionsDialogVisible"
+    [modal]="true"
+    [draggable]="false"
+    [style]="{ width: 'min(1040px, 94vw)' }"
+    [header]="selectedFlowPoint()?.fullLabel || 'Transacciones del día'"
+    (onHide)="closeDailyTransactions()"
+  >
+    <div class="daily-modal" *ngIf="selectedFlowPoint() as point">
+      <section class="daily-modal-summary" aria-label="Resumen del día seleccionado">
+        <article>
+          <span>Ingresos</span>
+          <strong>{{ selectedDaySummary().income | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+        </article>
+        <article>
+          <span>Gastos</span>
+          <strong>{{ selectedDaySummary().expense | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+        </article>
+        <article [class.negative]="selectedDaySummary().net < 0">
+          <span>Neto</span>
+          <strong>{{ selectedDaySummary().net | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+        </article>
+        <article>
+          <span>Movimientos</span>
+          <strong>{{ selectedDaySummary().count }}</strong>
+        </article>
+      </section>
+
+      <section class="daily-modal-filters" aria-label="Filtros de transacciones del día">
+        <label>
+          <span>Tipo</span>
+          <select [ngModel]="dailyTypeFilter()" (ngModelChange)="dailyTypeFilter.set($event)">
+            <option value="All">Todos</option>
+            <option value="Income">Ingresos</option>
+            <option value="Expense">Gastos</option>
+            <option value="Transfer">Transferencias</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Categoría</span>
+          <select [ngModel]="dailyCategoryFilter()" (ngModelChange)="dailyCategoryFilter.set($event)">
+            <option value="All">Todas</option>
+            <option *ngFor="let category of categories()" [value]="category.id">{{ category.name }}</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Cuenta</span>
+          <select [ngModel]="dailyAccountFilter()" (ngModelChange)="dailyAccountFilter.set($event)">
+            <option value="All">Todas</option>
+            <option *ngFor="let account of accounts()" [value]="account.id">{{ account.name }}</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Buscar</span>
+          <input
+            type="search"
+            [ngModel]="dailySearchFilter()"
+            (ngModelChange)="dailySearchFilter.set($event)"
+            placeholder="Descripción, referencia o categoría"
+          />
+        </label>
+
+        <button pButton type="button" icon="pi pi-filter-slash" label="Limpiar" severity="secondary" outlined (click)="clearDailyTransactionFilters()"></button>
+      </section>
+
+      <p-table [value]="filteredSelectedDayTransactions()" responsiveLayout="scroll" styleClass="daily-transactions-table">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Hora</th>
+            <th>Descripción</th>
+            <th>Tipo</th>
+            <th>Categoría</th>
+            <th>Cuenta / método</th>
+            <th>Monto</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-transaction>
+          <tr>
+            <td>{{ transaction.transactionDate | date: 'shortTime' }}</td>
+            <td>
+              <strong>{{ transaction.description || transaction.reference || 'Sin descripción' }}</strong>
+              <small *ngIf="transaction.reference">Ref. {{ transaction.reference }}</small>
+            </td>
+            <td><p-tag [severity]="transactionSeverity(transaction.type)" [value]="transactionTypeLabelPublic(transaction.type)"></p-tag></td>
+            <td>{{ categoryName(transaction.categoryId) }}</td>
+            <td>
+              {{ accountName(transaction.accountId) }}
+              <small *ngIf="transaction.toAccountId">a {{ accountName(transaction.toAccountId) }}</small>
+            </td>
+            <td>
+              <app-money-cell [value]="transaction.amount" [currency]="transaction.currency"></app-money-cell>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr><td colspan="6">Sin transacciones para los filtros seleccionados.</td></tr>
+        </ng-template>
+      </p-table>
+    </div>
   </p-dialog>
 </div>

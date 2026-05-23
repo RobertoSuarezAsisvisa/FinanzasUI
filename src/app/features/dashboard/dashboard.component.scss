@@ -571,10 +571,103 @@
   font-size: 0.82rem;
 }
 
+.daily-modal {
+  display: grid;
+  gap: 1rem;
+}
+
+.daily-modal-summary {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.daily-modal-summary article {
+  background: var(--dash-panel-soft);
+  border: 1px solid var(--dash-border);
+  border-radius: 0.55rem;
+  min-width: 0;
+  padding: 0.8rem;
+}
+
+.daily-modal-summary span,
+.daily-modal-filters span {
+  color: var(--dash-muted);
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.daily-modal-summary strong {
+  color: var(--dash-green);
+  display: block;
+  font-size: 1.08rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  margin-top: 0.35rem;
+  overflow-wrap: anywhere;
+}
+
+.daily-modal-summary article.negative strong {
+  color: var(--dash-red);
+}
+
+.daily-modal-filters {
+  align-items: end;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+}
+
+.daily-modal-filters label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.daily-modal-filters select,
+.daily-modal-filters input {
+  border: 1px solid var(--dash-border);
+  border-radius: 0.5rem;
+  color: var(--dash-ink);
+  font: inherit;
+  min-height: 2.55rem;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  width: 100%;
+}
+
+.daily-modal-filters select:focus,
+.daily-modal-filters input:focus {
+  border-color: var(--dash-blue);
+  box-shadow: 0 0 0 0.18rem rgba(37, 111, 144, 0.14);
+  outline: 0;
+}
+
 :host ::ng-deep .budget-transactions-table .p-datatable-thead > tr > th,
 :host ::ng-deep .budget-transactions-table .p-datatable-tbody > tr > td {
   font-size: 0.82rem;
   padding: 0.55rem 0.65rem;
+}
+
+:host ::ng-deep .daily-transactions-table .p-datatable-thead > tr > th,
+:host ::ng-deep .daily-transactions-table .p-datatable-tbody > tr > td {
+  font-size: 0.84rem;
+  padding: 0.65rem 0.75rem;
+  vertical-align: top;
+}
+
+:host ::ng-deep .daily-transactions-table td strong,
+:host ::ng-deep .daily-transactions-table td small {
+  display: block;
+}
+
+:host ::ng-deep .daily-transactions-table td small {
+  color: var(--dash-muted);
+  font-size: 0.74rem;
+  margin-top: 0.2rem;
 }
 
 .summary-grid {
@@ -681,6 +774,55 @@
   color: var(--dash-red);
 }
 
+.week-selector {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  margin-bottom: 0.85rem;
+}
+
+.week-option {
+  border: 1px solid var(--dash-border);
+  border-radius: 0.55rem;
+  color: var(--dash-ink);
+  cursor: pointer;
+  display: grid;
+  gap: 0.25rem;
+  min-height: 4rem;
+  min-width: 0;
+  padding: 0.7rem;
+  text-align: left;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.week-option:hover,
+.week-option:focus-visible {
+  border-color: var(--dash-border-strong);
+  box-shadow: 0 0.65rem 1.2rem rgba(16, 32, 25, 0.07);
+  outline: 0;
+  transform: translateY(-1px);
+}
+
+.week-option.active {
+  background: #eaf7ef;
+  border-color: #9ed3b5;
+  box-shadow: inset 0 0 0 1px rgba(22, 121, 74, 0.18);
+}
+
+.week-option span {
+  color: inherit;
+  font-size: 0.84rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.week-option small {
+  color: var(--dash-muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
 .chart-shell {
   background:
     radial-gradient(circle at 8% 18%, rgba(22, 121, 74, 0.1), transparent 13rem),
@@ -730,6 +872,17 @@
   stroke-width: 2;
 }
 
+.flow-point-group {
+  cursor: pointer;
+  outline: 0;
+}
+
+.flow-point-group:focus-visible .net-point {
+  filter: drop-shadow(0 0 0.35rem rgba(37, 111, 144, 0.7));
+  stroke: var(--dash-blue);
+  stroke-width: 4;
+}
+
 .chart-label,
 .chart-value {
   fill: var(--dash-muted);
@@ -768,13 +921,23 @@
 }
 
 .daily-flow-item {
-  background: #ffffff;
   border: 1px solid var(--dash-border);
   border-radius: 0.55rem;
+  cursor: pointer;
   min-width: 0;
   overflow: hidden;
   padding: 0.7rem;
   position: relative;
+  text-align: left;
+  width: 100%;
+}
+
+.daily-flow-item:hover,
+.daily-flow-item:focus-visible {
+  border-color: var(--dash-border-strong);
+  box-shadow: 0 0.65rem 1.2rem rgba(16, 32, 25, 0.07);
+  outline: 0;
+  transform: translateY(-1px);
 }
 
 .daily-flow-item::before {
@@ -1112,7 +1275,8 @@
   .lower-grid,
   .command-strip,
   .date-filter-card,
-  .date-filter-controls {
+  .date-filter-controls,
+  .daily-modal-filters {
     grid-template-columns: 1fr;
   }
 
@@ -1135,6 +1299,8 @@
   .bi-metrics,
   .bi-grid,
   .daily-flow-list,
+  .daily-modal-summary,
+  .daily-modal-filters,
   .system-metrics,
   .panel-summary,
   .detail-grid,
@@ -1189,13 +1355,17 @@
 @media (prefers-reduced-motion: reduce) {
   .metric-card,
   .entity-row,
-  .activity-row {
+  .activity-row,
+  .daily-flow-item,
+  .week-option {
     transition: none;
   }
 
   .metric-card:hover,
   .entity-row:hover,
-  .activity-row:hover {
+  .activity-row:hover,
+  .daily-flow-item:hover,
+  .week-option:hover {
     transform: none;
   }
 }

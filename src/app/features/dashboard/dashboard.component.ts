@@ -22,6 +22,7 @@ import {
   FinanceOverviewSummary,
   PurchaseGoalSummary,
   SavingGoalSummary,
+  TransactionType,
   TransactionSummary
 } from '../../core/models/finance.models';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
@@ -49,6 +50,14 @@ interface FlowChart {
   totalIncome: number;
   totalExpense: number;
   totalNet: number;
+}
+
+interface WeekOption {
+  index: number;
+  label: string;
+  rangeLabel: string;
+  start: Date;
+  end: Date;
 }
 
 interface AccountTile {
@@ -182,12 +191,20 @@ interface DashboardState {
 })
 export class DashboardComponent implements OnInit {
   loading = signal(true);
+  flowLoading = signal(false);
   categoriesDialogVisible = false;
   budgetsDialogVisible = false;
+  dailyTransactionsDialogVisible = false;
   healthOk = signal(false);
   lastRefreshed = signal<Date | null>(null);
   dateFrom = signal<Date | null>(null);
   dateTo = signal<Date | null>(null);
+  selectedWeekIndex = signal(0);
+  selectedFlowDateKey = signal<string | null>(null);
+  dailyTypeFilter = signal<'All' | TransactionType>('All');
+  dailyCategoryFilter = signal<string>('All');
+  dailyAccountFilter = signal<string>('All');
+  dailySearchFilter = signal('');
   state = signal<DashboardState | null>(null);
 
   overview = computed(() => this.state()?.overview ?? null);
@@ -200,6 +217,49 @@ export class DashboardComponent implements OnInit {
   savingGoals = computed(() => this.state()?.savingGoals ?? []);
   transactions = computed(() => this.state()?.transactions ?? []);
   weeklyTransactions = computed(() => this.state()?.weeklyTransactions ?? []);
+  currentMonthWeeks = computed(() => this.buildCurrentMonthWeeks());
+  selectedWeek = computed(() => this.currentMonthWeeks()[this.selectedWeekIndex()] ?? this.currentMonthWeeks()[0] ?? null);
+  selectedWeekTitle = computed(() => this.selectedWeek()?.label ?? 'Semana actual');
+  selectedWeekLabel = computed(() => this.selectedWeek()?.rangeLabel ?? 'Semana actual');
+  selectedFlowPoint = computed(() => {
+    const dateKey = this.selectedFlowDateKey();
+    return dateKey ? this.flowChart().points.find((point) => point.dateKey === dateKey) ?? null : null;
+  });
+  selectedDayTransactions = computed(() => {
+    const point = this.selectedFlowPoint();
+    if (!point) {
+      return [];
+    }
+
+    return this.weeklyTransactions()
+      .filter((transaction) => this.localDateKey(new Date(transaction.transactionDate)) === point.dateKey)
+      .sort((a, b) => this.transactionDateValue(b) - this.transactionDateValue(a));
+  });
+  filteredSelectedDayTransactions = computed(() => {
+    const type = this.dailyTypeFilter();
+    const categoryId = this.dailyCategoryFilter();
+    const accountId = this.dailyAccountFilter();
+    const search = this.dailySearchFilter().trim().toLocaleLowerCase();
+
+    return this.selectedDayTransactions().filter((transaction) => {
+      const matchesType = type === 'All' || transaction.type === type;
+      const matchesCategory = categoryId === 'All' || (transaction.categoryId ?? '') === categoryId;
+      const matchesAccount = accountId === 'All' || transaction.accountId === accountId || transaction.toAccountId === accountId;
+      const text = `${transaction.description ?? ''} ${transaction.reference ?? ''} ${this.categoryName(transaction.categoryId)} ${this.accountName(transaction.accountId)}`.toLocaleLowerCase();
+      return matchesType && matchesCategory && matchesAccount && (!search || text.includes(search));
+    });
+  });
+  selectedDaySummary = computed(() => {
+    const transactions = this.selectedDayTransactions();
+    const income = this.sumTransactions(transactions, 'Income');
+    const expense = this.sumTransactions(transactions, 'Expense');
+    return {
+      income,
+      expense,
+      net: income - expense,
+      count: transactions.length
+    };
+  });
   dateRangeLabel = computed(() => {
     const from = this.dateFrom();
     const to = this.dateTo();
@@ -447,15 +507,20 @@ export class DashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.selectedWeekIndex.set(this.currentWeekIndexInMonth());
     this.load();
   }
 
   load(): void {
+    this.flowLoading.set(!!this.state());
     this.loading.set(true);
 
     this.dashboard
       .load(this.dashboardQuery(), this.currentWeekQuery())
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(finalize(() => {
+        this.loading.set(false);
+        this.flowLoading.set(false);
+      }))
       .subscribe({
         next: (state) => {
           this.state.set(state);
@@ -475,6 +540,7 @@ export class DashboardComponent implements OnInit {
             weeklyTransactions: []
           });
           this.lastRefreshed.set(new Date());
+          this.flowLoading.set(false);
         }
       });
 
@@ -517,6 +583,12 @@ export class DashboardComponent implements OnInit {
     this.load();
   }
 
+  selectWeek(index: number): void {
+    this.selectedWeekIndex.set(index);
+    this.closeDailyTransactions();
+    this.load();
+  }
+
   flowSeverity(): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
     const chart = this.flowChart();
     if (!chart.points.length) {
@@ -549,7 +621,7 @@ export class DashboardComponent implements OnInit {
     }
 
     const todayPoint = this.todayFlowPoint() ?? chart.points.at(-1)!;
-    return `Hoy: ingresos ${this.formatAmount(todayPoint.income, 'USD')}, gastos ${this.formatAmount(todayPoint.expense, 'USD')} y neto ${this.formatAmount(todayPoint.net, 'USD')}.`;
+    return `${todayPoint.fullLabel}: ingresos ${this.formatAmount(todayPoint.income, 'USD')}, gastos ${this.formatAmount(todayPoint.expense, 'USD')} y neto ${this.formatAmount(todayPoint.net, 'USD')}.`;
   }
 
   flowBadgeLabel(): string {
@@ -579,7 +651,7 @@ export class DashboardComponent implements OnInit {
   }
 
   flowTooltip(): string {
-    return 'Evalúa el flujo diario de la semana actual: compara ingresos contra gastos y muestra el neto por día.';
+    return 'Evalúa el flujo diario de la semana seleccionada: compara ingresos contra gastos y muestra el neto por día.';
   }
 
   mixTooltip(item: BiSlice): string {
@@ -596,6 +668,25 @@ export class DashboardComponent implements OnInit {
 
   flowPointTooltip(point: FlowPoint): string {
     return `${point.fullLabel}: ingresos ${this.formatAmount(point.income, 'USD')}, gastos ${this.formatAmount(point.expense, 'USD')} y neto ${this.formatAmount(point.net, 'USD')}.`;
+  }
+
+  openDailyTransactions(point: FlowPoint): void {
+    this.selectedFlowDateKey.set(point.dateKey);
+    this.clearDailyTransactionFilters();
+    this.dailyTransactionsDialogVisible = true;
+  }
+
+  closeDailyTransactions(): void {
+    this.dailyTransactionsDialogVisible = false;
+    this.selectedFlowDateKey.set(null);
+    this.clearDailyTransactionFilters();
+  }
+
+  clearDailyTransactionFilters(): void {
+    this.dailyTypeFilter.set('All');
+    this.dailyCategoryFilter.set('All');
+    this.dailyAccountFilter.set('All');
+    this.dailySearchFilter.set('');
   }
 
   accountPurposeLabel(purpose: string): string {
@@ -665,6 +756,10 @@ export class DashboardComponent implements OnInit {
     }
 
     return 'info';
+  }
+
+  transactionTypeLabelPublic(type: string): string {
+    return this.transactionTypeLabel(type);
   }
 
   private sortedTransactions(): TransactionSummary[] {
@@ -746,7 +841,7 @@ export class DashboardComponent implements OnInit {
   }
 
   private buildFlowChart(transactions: TransactionSummary[]): FlowChart {
-    const days = this.buildCurrentWeekDays();
+    const days = this.buildSelectedWeekDays();
     const points = days.map((date, index) => {
       const dailyTransactions = transactions.filter((transaction) => this.isSameLocalDay(transaction.transactionDate, date));
       const income = this.sumTransactions(dailyTransactions, 'Income');
@@ -797,15 +892,15 @@ export class DashboardComponent implements OnInit {
     return {
       netPath: renderedPoints.map((point) => `${point.x + 2},${point.netY}`).join(' '),
       points: renderedPoints,
-      subtitle: `${this.formatAmount(totalIncome, 'USD')} en ingresos, ${this.formatAmount(totalExpense, 'USD')} en gastos y ${this.formatAmount(totalNet, 'USD')} neto esta semana.`,
+      subtitle: `${this.formatAmount(totalIncome, 'USD')} en ingresos, ${this.formatAmount(totalExpense, 'USD')} en gastos y ${this.formatAmount(totalNet, 'USD')} neto en ${this.selectedWeekLabel()}.`,
       totalIncome,
       totalExpense,
       totalNet
     };
   }
 
-  private buildCurrentWeekDays(): Date[] {
-    const start = this.startOfCurrentWeek();
+  private buildSelectedWeekDays(): Date[] {
+    const start = this.selectedWeek()?.start ?? this.startOfCurrentWeek();
     const days: Date[] = [];
 
     for (let index = 0; index < 7; index++) {
@@ -964,7 +1059,7 @@ export class DashboardComponent implements OnInit {
     return this.accounts().find((account) => account.id === accountId)?.name ?? 'Cuenta no identificada';
   }
 
-  private categoryName(categoryId?: string | null): string {
+  categoryName(categoryId?: string | null): string {
     return this.categories().find((category) => category.id === categoryId)?.name ?? 'Sin categoría';
   }
 
@@ -1047,15 +1142,60 @@ export class DashboardComponent implements OnInit {
   }
 
   private currentWeekQuery(): Record<string, string> {
+    const week = this.selectedWeek();
+
     return {
-      dateFrom: this.startOfCurrentWeek().toISOString(),
-      dateTo: this.endOfCurrentWeek().toISOString()
+      dateFrom: (week?.start ?? this.startOfCurrentWeek()).toISOString(),
+      dateTo: (week?.end ?? this.endOfCurrentWeek()).toISOString()
     };
   }
 
-  private startOfCurrentWeek(): Date {
+  private buildCurrentMonthWeeks(): WeekOption[] {
     const today = new Date();
-    const start = this.startOfDay(today);
+    const monthStart = this.startOfDay(new Date(today.getFullYear(), today.getMonth(), 1));
+    const monthEnd = this.endOfDay(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+    const firstWeekStart = this.startOfWeek(monthStart);
+    const weeks: WeekOption[] = [];
+    let cursor = firstWeekStart;
+    let index = 0;
+
+    while (cursor <= monthEnd) {
+      const start = this.startOfDay(cursor);
+      const end = this.endOfDay(new Date(start));
+      end.setDate(start.getDate() + 6);
+      weeks.push({
+        index,
+        label: `Semana ${index + 1}`,
+        rangeLabel: `${this.formatDateLabel(start)} - ${this.formatDateLabel(end)}`,
+        start,
+        end
+      });
+
+      cursor = new Date(start);
+      cursor.setDate(cursor.getDate() + 7);
+      index += 1;
+    }
+
+    return weeks;
+  }
+
+  private currentWeekIndexInMonth(): number {
+    const todayKey = this.localDateKey(new Date());
+    const index = this.buildCurrentMonthWeeks().findIndex((week) => {
+      const startKey = this.localDateKey(week.start);
+      const endKey = this.localDateKey(week.end);
+      return todayKey >= startKey && todayKey <= endKey;
+    });
+
+    return Math.max(0, index);
+  }
+
+  private startOfCurrentWeek(): Date {
+    return this.startOfWeek(new Date());
+  }
+
+  private startOfWeek(date: Date): Date {
+    const start = this.startOfDay(date);
     const day = start.getDay();
     const mondayOffset = day === 0 ? -6 : 1 - day;
     start.setDate(start.getDate() + mondayOffset);
