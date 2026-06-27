@@ -114,29 +114,29 @@
   </article>
 </section>
 
-<section class="saving-goals-overview" *ngIf="isSavingGoalsResource()">
-  <article class="saving-goal-kpi">
-    <span>Ahorrado</span>
-    <strong>{{ savingGoalSavedTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
-    <small>de {{ savingGoalTargetTotal() | currency: 'USD' : 'symbol' : '1.0-2' }} objetivo total</small>
+<section class="financial-goals-overview" *ngIf="isFinancialGoalsResource()">
+  <article class="financial-goal-kpi">
+    <span>Acumulado</span>
+    <strong>{{ financialGoalSavedTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>de {{ financialGoalTargetTotal() | currency: 'USD' : 'symbol' : '1.0-2' }} objetivo total</small>
   </article>
-  <article class="saving-goal-kpi">
+  <article class="financial-goal-kpi">
     <span>Faltante</span>
-    <strong>{{ savingGoalRemainingTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
-    <small>{{ savingGoalProgressTotal() | number: '1.0-0' }}% global completado</small>
+    <strong>{{ financialGoalRemainingTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ financialGoalProgressTotal() | number: '1.0-0' }}% global completado</small>
   </article>
-  <article class="saving-goal-kpi">
+  <article class="financial-goal-kpi">
     <span>Aporte mensual</span>
-    <strong>{{ savingGoalMonthlyTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <strong>{{ financialGoalMonthlyTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
     <small>Suma sugerida para llegar a tiempo</small>
   </article>
-  <article class="saving-goal-kpi">
-    <span>Próxima meta</span>
-    <strong>{{ nextSavingGoalName() }}</strong>
-    <small>{{ nextSavingGoalDateLabel() }}</small>
+  <article class="financial-goal-kpi">
+    <span>Próxima prioridad</span>
+    <strong>{{ nextFinancialGoalName() }}</strong>
+    <small>{{ nextFinancialGoalDateLabel() }}</small>
   </article>
-  <div class="saving-goals-progress">
-    <p-progressBar [value]="savingGoalProgressTotal()" [showValue]="false"></p-progressBar>
+  <div class="financial-goals-progress">
+    <p-progressBar [value]="financialGoalProgressTotal()" [showValue]="false"></p-progressBar>
   </div>
 </section>
 
@@ -187,56 +187,6 @@
   </article>
   <div class="budget-overview-progress">
     <p-progressBar [value]="budgetUsageTotal()" [showValue]="false"></p-progressBar>
-  </div>
-</section>
-
-<section class="purchase-goals-context" *ngIf="isPurchaseGoalsResource()">
-  <article>
-    <i class="pi pi-shopping-bag" aria-hidden="true"></i>
-    <div>
-      <strong>Qué es una meta de compra</strong>
-      <span>Es una compra planificada que separas de tus gastos diarios para decidir cuánto ahorrar antes de comprar.</span>
-    </div>
-  </article>
-  <article>
-    <i class="pi pi-sort-amount-up" aria-hidden="true"></i>
-    <div>
-      <strong>Cómo usar la prioridad</strong>
-      <span>La prioridad te ayuda a ordenar qué compras atender primero cuando el dinero disponible no alcanza para todo.</span>
-    </div>
-  </article>
-  <article>
-    <i class="pi pi-wallet" aria-hidden="true"></i>
-    <div>
-      <strong>Cuenta asociada</strong>
-      <span>Es la cuenta donde quieres controlar el dinero reservado o relacionado con esa compra.</span>
-    </div>
-  </article>
-</section>
-
-<section class="purchase-goals-overview" *ngIf="isPurchaseGoalsResource()">
-  <article class="purchase-goal-kpi">
-    <span>Ahorrado</span>
-    <strong>{{ purchaseGoalSavedTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
-    <small>de {{ purchaseGoalTargetTotal() | currency: 'USD' : 'symbol' : '1.0-2' }} objetivo total</small>
-  </article>
-  <article class="purchase-goal-kpi">
-    <span>Faltante</span>
-    <strong>{{ purchaseGoalRemainingTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
-    <small>{{ purchaseGoalProgressTotal() | number: '1.0-0' }}% global completado</small>
-  </article>
-  <article class="purchase-goal-kpi">
-    <span>Aporte mensual</span>
-    <strong>{{ purchaseGoalMonthlyTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
-    <small>Suma sugerida para llegar a tiempo</small>
-  </article>
-  <article class="purchase-goal-kpi">
-    <span>Mayor prioridad</span>
-    <strong>{{ topPurchaseGoalName() }}</strong>
-    <small>{{ topPurchaseGoalDateLabel() }}</small>
-  </article>
-  <div class="purchase-goals-progress">
-    <p-progressBar [value]="purchaseGoalProgressTotal()" [showValue]="false"></p-progressBar>
   </div>
 </section>
 
@@ -417,7 +367,7 @@
             </span>
             <span
               *ngIf="field.type !== 'color' && field.type !== 'date'"
-              [class.goal-progress-cell]="isSavingGoalProgressField(field) || isBudgetUsageField(field) || isPurchaseGoalProgressField(field) || isDebtProgressField(field)"
+              [class.goal-progress-cell]="isFinancialGoalProgressField(field) || isBudgetUsageField(field) || isDebtProgressField(field)"
             >{{ displayValue(item, field) }}</span>
             <span *ngIf="field.type === 'date'">{{ item[field.key] | date: field.showTime ? 'medium' : 'mediumDate' }}</span>
           </ng-template>
@@ -563,7 +513,7 @@
   [(visible)]="dialogVisible"
   [modal]="true"
   [draggable]="false"
-  [style]="{ width: isAccountsResource() || isTransactionsResource() || isSavingGoalsResource() || isDebtsResource() ? 'min(920px, 94vw)' : 'min(760px, 94vw)' }"
+  [style]="{ width: isAccountsResource() || isTransactionsResource() || isFinancialGoalsResource() || isDebtsResource() ? 'min(920px, 94vw)' : 'min(760px, 94vw)' }"
   [header]="editingItem ? 'Editar ' + definition.title : 'Nuevo ' + definition.title"
 >
   <form class="resource-form" [formGroup]="form" (ngSubmit)="save()">

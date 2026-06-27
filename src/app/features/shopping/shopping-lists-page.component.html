@@ -1,0 +1,79 @@
+<app-page-header
+  title="Compras - Listas"
+  subtitle="Crea listas de compras y recibe recomendaciones para optimizar tu gasto por tienda."
+  icon="pi pi-list-check"
+></app-page-header>
+
+<section class="shopping-shell">
+  @if (message()) {
+    <p class="error">{{ message() }}</p>
+  }
+
+  <section class="grid-two">
+    <article class="panel">
+      <h2>Nueva lista</h2>
+      <div class="inline-form">
+        <input pInputText placeholder="Nombre" [(ngModel)]="listForm.name" />
+        <input pInputText type="date" [(ngModel)]="listForm.listDate" />
+      </div>
+      @for (item of listForm.items; track $index; let i = $index) {
+        <div class="list-item-row">
+          <p-select [options]="variantOptions()" optionLabel="label" optionValue="value" placeholder="Producto" [(ngModel)]="item.productVariantId" (onChange)="syncItemUnit(item)"></p-select>
+          <p-inputNumber [(ngModel)]="item.desiredQuantity" [min]="0.0001" [maxFractionDigits]="4"></p-inputNumber>
+          <p-select [options]="units" [(ngModel)]="item.unit"></p-select>
+          @if (listForm.items.length > 1) {
+            <button pButton type="button" icon="pi pi-trash" severity="danger" text (click)="removeListItem(i)"></button>
+          }
+        </div>
+      }
+      <div class="actions">
+        <button pButton type="button" icon="pi pi-plus" label="Otro producto" outlined (click)="addListItem()"></button>
+        <button pButton type="button" icon="pi pi-list-check" label="Crear y recomendar" (click)="createList()"></button>
+      </div>
+    </article>
+
+    <article class="panel">
+      <h2>Listas recientes</h2>
+      <p-table styleClass="shopping-table" [value]="lists()">
+        <ng-template pTemplate="header"><tr><th>Lista</th><th>Fecha</th><th>Items</th><th></th></tr></ng-template>
+        <ng-template pTemplate="body" let-list>
+          <tr>
+            <td>{{ list.name }}</td>
+            <td>{{ list.listDate | date: 'shortDate' }}</td>
+            <td>{{ list.items.length }}</td>
+            <td><button pButton type="button" icon="pi pi-bolt" text (click)="recommend(list.id)"></button></td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </article>
+
+    @if (recommendation(); as rec) {
+      <article class="panel wide">
+        <h2>Recomendacion</h2>
+        <div class="summary-strip">
+          <span>Total estimado: <strong>{{ rec.estimatedTotal | currency: 'USD' }}</strong></span>
+          <span>Ahorro estimado: <strong>{{ rec.estimatedSavings | currency: 'USD' }}</strong></span>
+        </div>
+        @for (group of rec.storeGroups; track group.storeId) {
+          <div class="store-group">
+            <h3>{{ group.storeName }} <span>{{ group.subtotal | currency: 'USD' }}</span></h3>
+            <p-table styleClass="shopping-table" [value]="group.items">
+              <ng-template pTemplate="header"><tr><th>Producto</th><th>Cantidad</th><th>Unitario</th><th>Estimado</th></tr></ng-template>
+              <ng-template pTemplate="body" let-item>
+                <tr><td>{{ item.productName }} - {{ item.variantName }}</td><td>{{ item.desiredQuantity }} {{ item.unit }}</td><td>{{ item.unitPrice | currency: 'USD' }}</td><td>{{ item.estimatedPrice | currency: 'USD' }}</td></tr>
+              </ng-template>
+            </p-table>
+          </div>
+        }
+        @if (rec.missingItems.length) {
+          <div class="missing">
+            <h3>Sin precio</h3>
+            @for (item of rec.missingItems; track item.productVariantId) {
+              <p>{{ item.productName }} - {{ item.variantName }}</p>
+            }
+          </div>
+        }
+      </article>
+    }
+  </section>
+</section>

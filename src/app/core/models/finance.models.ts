@@ -3,7 +3,9 @@ export type Id = string;
 export type TransactionType = 'Income' | 'Expense' | 'Transfer';
 export type AccountType = 'Bank' | 'Cash' | 'DigitalWallet' | 'Crypto' | string;
 export type AccountPurpose = 'Spending' | 'Savings' | 'Investment' | 'Reserved' | string;
-export type GoalStatus = 'InProgress' | 'Saving' | 'Completed' | 'Cancelled' | string;
+export type FinancialGoalType = 'Saving' | 'Purchase' | 'Custom';
+export type FinancialGoalStatus = 'InProgress' | 'Ready' | 'Completed' | 'Cancelled';
+export type GoalStatus = FinancialGoalStatus | string;
 export type DebtType = 'Payable' | 'Receivable';
 export type DebtStatus = 'Active' | 'Paid' | 'Cancelled' | string;
 export type PeriodStatus = 'Open' | 'Closed' | string;
@@ -72,31 +74,36 @@ export interface Budget {
 
 export interface GoalContribution {
   id?: Id;
+  goalId?: Id;
   amount: number;
   contributionDate: string;
   transactionId?: Id | null;
+  accountId?: Id | null;
 }
 
-export interface SavingGoal {
+export interface FinancialGoal {
   id?: Id;
   name: string;
-  targetAmount: number;
-  accountId: Id;
-  targetDate: string;
-  status?: GoalStatus;
-}
-
-export interface PurchaseGoal {
-  id?: Id;
-  name: string;
-  targetPrice: number;
   description?: string | null;
-  priority?: number;
+  targetAmount: number;
+  currentAmount: number;
+  suggestedMonthlyContribution?: number | null;
+  accountId?: Id | null;
+  targetDate?: string | null;
+  status: FinancialGoalStatus;
+  type: FinancialGoalType;
+  priority: number;
   url?: string | null;
-  accountId: Id;
-  targetDate: string;
-  status?: GoalStatus;
-  purchasedAt?: string | null;
+  completedAt?: string | null;
+}
+
+export interface FinancialGoalContribution {
+  id: Id;
+  goalId: Id;
+  transactionId?: Id | null;
+  accountId?: Id | null;
+  amount: number;
+  contributionDate: string;
 }
 
 export interface Debt {
@@ -265,29 +272,7 @@ export interface BudgetSummary {
   isActive: boolean;
 }
 
-export interface SavingGoalSummary {
-  id: Id;
-  name: string;
-  targetAmount: number;
-  currentAmount: number;
-  suggestedMonthlyContribution?: number | null;
-  accountId?: Id | null;
-  targetDate?: string | null;
-  status: GoalStatus;
-}
-
-export interface PurchaseGoalSummary {
-  id: Id;
-  name: string;
-  targetPrice: number;
-  savedAmount: number;
-  suggestedMonthlyContribution?: number | null;
-  priority: number;
-  url?: string | null;
-  accountId?: Id | null;
-  targetDate?: string | null;
-  status: GoalStatus;
-}
+export type FinancialGoalSummary = FinancialGoal & { id: Id };
 
 export interface DebtSummary {
   id: Id;
@@ -325,6 +310,5 @@ export interface FinanceOverviewSummary {
   netBalance: number;
   totalAssets: number;
   totalDebts: number;
-  savingGoalsProgress: number;
-  purchaseGoalsProgress: number;
+  goalsProgress: number;
 }

@@ -22,6 +22,7 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
     expect(app.navItems.some((item) => item.route === '/transactions')).toBeTrue();
+    expect(app.navItems.find((item) => item.label === 'Compras')?.children?.some((child) => child.route === '/shopping/products')).toBeTrue();
   });
 
   it('should render the application shell', () => {

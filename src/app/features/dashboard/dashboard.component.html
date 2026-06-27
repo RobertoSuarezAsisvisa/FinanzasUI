@@ -429,7 +429,7 @@
     <section class="lower-grid">
       <p-panel class="goals-panel-shell" header="Metas" styleClass="dashboard-panel">
       <div class="panel-summary goals-summary" [pTooltip]="goalSummaryTooltip()" tooltipPosition="top">
-        <div pTooltip="Cantidad total de metas de ahorro y compra registradas." tooltipPosition="top">
+        <div pTooltip="Cantidad total de metas financieras registradas." tooltipPosition="top">
           <span>Total metas</span>
           <strong>{{ totalGoals() }}</strong>
         </div>
@@ -499,7 +499,7 @@
                   <span>Cuenta</span>
                   <strong>{{ goalAccountLabel(goal) }}</strong>
                 </div>
-                <div pTooltip="Prioridad registrada para metas de compra. Las metas de ahorro muestran prioridad 0." tooltipPosition="top">
+                <div pTooltip="Prioridad registrada para ordenar metas financieras." tooltipPosition="top">
                   <span>Prioridad</span>
                   <strong>{{ goal.priority }}</strong>
                 </div>

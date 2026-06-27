@@ -1,0 +1,246 @@
+<app-page-header title="Compras" subtitle="Productos, precios por tienda y listas optimizadas por precio unitario." icon="pi pi-shopping-cart"></app-page-header>
+
+<section class="shopping-shell">
+  <div class="tabs">
+    <a
+      *ngFor="let section of shoppingSections"
+      pButton
+      type="button"
+      [routerLink]="section.route"
+      routerLinkActive="active-tab"
+      [routerLinkActiveOptions]="{ exact: true }"
+      [label]="section.label"
+      [icon]="section.icon"
+      [outlined]="activeTab() !== section.key"
+      class="tab-link"
+    ></a>
+  </div>
+
+  <p class="error" *ngIf="message()">{{ message() }}</p>
+
+  <section class="catalog-shell" *ngIf="activeTab() === 'catalog'">
+    <div class="segmented-tabs" role="tablist" aria-label="Catalogo de compras">
+      <button
+        *ngFor="let section of catalogSections"
+        pButton
+        type="button"
+        [icon]="section.icon"
+        [label]="section.label"
+        [outlined]="activeCatalogSection() !== section.key"
+        [attr.aria-selected]="activeCatalogSection() === section.key"
+        role="tab"
+        (click)="activeCatalogSection.set(section.key)"
+      ></button>
+    </div>
+
+    <article class="panel" *ngIf="activeCatalogSection() === 'stores'">
+      <div class="panel-heading">
+        <h2>Tiendas</h2>
+        <p-tag [value]="stores().length + ' registradas'"></p-tag>
+      </div>
+      <div class="inline-form">
+        <input pInputText placeholder="Tutti, Supermaxi..." [(ngModel)]="storeForm.name" />
+        <button pButton type="button" [icon]="editingStoreId ? 'pi pi-save' : 'pi pi-plus'" [label]="editingStoreId ? 'Actualizar' : 'Agregar'" (click)="createStore()"></button>
+      </div>
+      <textarea pTextarea rows="2" placeholder="Notas" [(ngModel)]="storeForm.notes"></textarea>
+      <button *ngIf="editingStoreId" pButton type="button" icon="pi pi-times" label="Cancelar edicion" severity="secondary" outlined (click)="cancelStoreEdit()"></button>
+      <p-table styleClass="shopping-table" [value]="stores()">
+        <ng-template pTemplate="header"><tr><th>Nombre</th><th>Notas</th><th class="action-col"></th></tr></ng-template>
+        <ng-template pTemplate="body" let-store>
+          <tr>
+            <td>{{ store.name }}</td>
+            <td>{{ store.notes }}</td>
+            <td class="row-actions">
+              <button pButton type="button" icon="pi pi-pencil" text aria-label="Editar tienda" (click)="editStore(store)"></button>
+              <button pButton type="button" icon="pi pi-trash" severity="danger" text aria-label="Eliminar tienda" (click)="deleteStore(store)"></button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </article>
+
+    <section class="product-crud" *ngIf="activeCatalogSection() === 'products'">
+      <article class="panel">
+        <div class="panel-heading">
+          <h2>Productos</h2>
+          <p-tag [value]="products().length + ' registrados'"></p-tag>
+        </div>
+        <div class="inline-form">
+          <input pInputText placeholder="Huevos, jamon, chocolate..." [(ngModel)]="productForm.name" />
+          <button pButton type="button" [icon]="editingProductId ? 'pi pi-save' : 'pi pi-plus'" [label]="editingProductId ? 'Actualizar' : 'Agregar'" (click)="createProduct()"></button>
+        </div>
+        <textarea pTextarea rows="2" placeholder="Notas" [(ngModel)]="productForm.notes"></textarea>
+        <button *ngIf="editingProductId" pButton type="button" icon="pi pi-times" label="Cancelar edicion" severity="secondary" outlined (click)="cancelProductEdit()"></button>
+        <p-table styleClass="shopping-table" [value]="products()">
+          <ng-template pTemplate="header"><tr><th>Producto</th><th>Notas</th><th class="action-col"></th></tr></ng-template>
+          <ng-template pTemplate="body" let-product>
+            <tr>
+              <td>{{ product.name }}</td>
+              <td>{{ product.notes }}</td>
+              <td class="row-actions">
+                <button pButton type="button" icon="pi pi-pencil" text aria-label="Editar producto" (click)="editProduct(product)"></button>
+                <button pButton type="button" icon="pi pi-trash" severity="danger" text aria-label="Eliminar producto" (click)="deleteProduct(product)"></button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </article>
+
+      <article class="panel">
+        <div class="panel-heading">
+          <h2>Presentaciones</h2>
+          <p-tag [value]="variants().length + ' variantes'"></p-tag>
+        </div>
+        <div class="variant-form">
+          <p-select [options]="products()" optionLabel="name" optionValue="id" placeholder="Producto" [(ngModel)]="variantForm.productId"></p-select>
+          <input pInputText placeholder="Huevos grandes x12" [(ngModel)]="variantForm.name" />
+          <p-inputNumber [(ngModel)]="variantForm.normalizedQuantity" [min]="0.0001" [minFractionDigits]="0" [maxFractionDigits]="4"></p-inputNumber>
+          <p-select [options]="units" [(ngModel)]="variantForm.unit"></p-select>
+          <input pInputText placeholder="Codigo de barras" [(ngModel)]="variantForm.barcode" />
+          <button pButton type="button" [icon]="editingVariantId ? 'pi pi-save' : 'pi pi-plus'" [label]="editingVariantId ? 'Actualizar' : 'Agregar'" (click)="createVariant()"></button>
+        </div>
+        <button *ngIf="editingVariantId" pButton type="button" icon="pi pi-times" label="Cancelar edicion" severity="secondary" outlined (click)="cancelVariantEdit()"></button>
+        <p-table styleClass="shopping-table" [value]="variants()">
+          <ng-template pTemplate="header"><tr><th>Producto</th><th>Presentacion</th><th>Cantidad</th><th>Unidad</th><th class="action-col"></th></tr></ng-template>
+          <ng-template pTemplate="body" let-variant>
+            <tr>
+              <td>{{ variant.productName }}</td>
+              <td>{{ variant.name }}</td>
+              <td>{{ variant.normalizedQuantity }}</td>
+              <td>{{ variant.unit }}</td>
+              <td class="row-actions">
+                <button pButton type="button" icon="pi pi-pencil" text aria-label="Editar presentacion" (click)="editVariant(variant)"></button>
+                <button pButton type="button" icon="pi pi-trash" severity="danger" text aria-label="Eliminar presentacion" (click)="deleteVariant(variant)"></button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </article>
+    </section>
+  </section>
+
+  <section class="panel" *ngIf="activeTab() === 'prices'">
+    <h2>Precios por tienda</h2>
+    <div class="price-form">
+      <p-select [options]="stores()" optionLabel="name" optionValue="id" placeholder="Tienda" [(ngModel)]="priceForm.storeId"></p-select>
+      <p-select [options]="variantOptions()" optionLabel="label" optionValue="value" placeholder="Producto" [(ngModel)]="priceForm.productVariantId"></p-select>
+      <p-inputNumber [(ngModel)]="priceForm.totalPrice" mode="currency" currency="USD" locale="en-US" [min]="0.01"></p-inputNumber>
+      <p-inputNumber [(ngModel)]="priceForm.normalizedQuantity" [min]="0.0001" [maxFractionDigits]="4"></p-inputNumber>
+      <p-select [options]="units" [(ngModel)]="priceForm.unit"></p-select>
+      <input pInputText type="date" [(ngModel)]="priceForm.observedAt" />
+      <button pButton type="button" icon="pi pi-plus" label="Guardar precio" (click)="createPrice()"></button>
+    </div>
+    <p-table styleClass="shopping-table" [value]="prices()">
+      <ng-template pTemplate="header"><tr><th>Tienda</th><th>Producto</th><th>Precio</th><th>Cantidad</th><th>Unitario</th><th>Fecha</th><th>Fuente</th></tr></ng-template>
+      <ng-template pTemplate="body" let-price>
+        <tr>
+          <td>{{ price.storeName }}</td>
+          <td>{{ price.productName }} - {{ price.variantName }}</td>
+          <td>{{ price.totalPrice | currency: 'USD' }}</td>
+          <td>{{ price.normalizedQuantity }} {{ price.unit }}</td>
+          <td>{{ price.unitPrice | currency: 'USD' }}</td>
+          <td>{{ price.observedAt | date: 'shortDate' }}</td>
+          <td><p-tag [value]="price.source"></p-tag></td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </section>
+
+  <section class="grid-two" *ngIf="activeTab() === 'receipts'">
+    <article class="panel">
+      <h2>Analizar factura</h2>
+      <input type="file" accept="image/*" (change)="chooseUpload($event)" />
+      <button pButton type="button" icon="pi pi-sparkles" label="Analizar con IA" [disabled]="!selectedUploadFile() || loading()" (click)="analyzeReceipt()"></button>
+      <p-table styleClass="shopping-table" [value]="receipts()">
+        <ng-template pTemplate="header"><tr><th>Archivo</th><th>Tienda</th><th>Estado</th><th></th></tr></ng-template>
+        <ng-template pTemplate="body" let-receipt>
+          <tr>
+            <td>{{ receipt.fileName }}</td>
+            <td>{{ receipt.storeName || receipt.detectedStoreName }}</td>
+            <td><p-tag [value]="receipt.status"></p-tag></td>
+            <td><button pButton type="button" icon="pi pi-eye" text (click)="selectReceipt(receipt)"></button></td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </article>
+
+    <article class="panel" *ngIf="selectedReceipt() as receipt">
+      <h2>Revision obligatoria</h2>
+      <p-select [options]="stores()" optionLabel="name" optionValue="id" placeholder="Tienda confirmada" [(ngModel)]="receiptConfirmStoreId"></p-select>
+      <p class="empty-note" *ngIf="receipt.lines.length === 0">Gemini no detecto productos. Agrega las lineas manualmente para guardar precios.</p>
+      <p-table styleClass="shopping-table review-table" [value]="receipt.lines">
+        <ng-template pTemplate="header"><tr><th>Producto</th><th>Presentacion</th><th>Cantidad</th><th>Unidad</th><th>Total</th><th></th></tr></ng-template>
+        <ng-template pTemplate="body" let-line let-rowIndex="rowIndex">
+          <tr>
+            <td><input pInputText [(ngModel)]="line.productName" /></td>
+            <td><input pInputText [(ngModel)]="line.variantName" /></td>
+            <td><p-inputNumber [(ngModel)]="line.quantity" [min]="0.0001" [maxFractionDigits]="4"></p-inputNumber></td>
+            <td><p-select [options]="units" [(ngModel)]="line.unit"></p-select></td>
+            <td><p-inputNumber [(ngModel)]="line.totalPrice" mode="currency" currency="USD" locale="en-US"></p-inputNumber></td>
+            <td><button pButton type="button" icon="pi pi-trash" severity="danger" text (click)="removeReceiptLine(receipt, rowIndex)"></button></td>
+          </tr>
+        </ng-template>
+      </p-table>
+      <div class="actions">
+        <button pButton type="button" icon="pi pi-plus" label="Agregar producto" outlined (click)="addReceiptLine(receipt)"></button>
+        <button pButton type="button" icon="pi pi-check" label="Confirmar y guardar precios" [disabled]="!receiptConfirmStoreId || receipt.lines.length === 0" (click)="confirmReceipt()"></button>
+      </div>
+    </article>
+  </section>
+
+  <section class="grid-two" *ngIf="activeTab() === 'lists'">
+    <article class="panel">
+      <h2>Nueva lista</h2>
+      <div class="inline-form">
+        <input pInputText placeholder="Nombre" [(ngModel)]="listForm.name" />
+        <input pInputText type="date" [(ngModel)]="listForm.listDate" />
+      </div>
+      <div class="list-item-row" *ngFor="let item of listForm.items; let i = index">
+        <p-select [options]="variantOptions()" optionLabel="label" optionValue="value" placeholder="Producto" [(ngModel)]="item.productVariantId" (onChange)="syncItemUnit(item)"></p-select>
+        <p-inputNumber [(ngModel)]="item.desiredQuantity" [min]="0.0001" [maxFractionDigits]="4"></p-inputNumber>
+        <p-select [options]="units" [(ngModel)]="item.unit"></p-select>
+        <button pButton type="button" icon="pi pi-trash" severity="danger" text (click)="removeListItem(i)" *ngIf="listForm.items.length > 1"></button>
+      </div>
+      <div class="actions">
+        <button pButton type="button" icon="pi pi-plus" label="Otro producto" outlined (click)="addListItem()"></button>
+        <button pButton type="button" icon="pi pi-list-check" label="Crear y recomendar" (click)="createList()"></button>
+      </div>
+    </article>
+
+    <article class="panel">
+      <h2>Listas recientes</h2>
+      <p-table styleClass="shopping-table" [value]="lists()">
+        <ng-template pTemplate="header"><tr><th>Lista</th><th>Fecha</th><th>Items</th><th></th></tr></ng-template>
+        <ng-template pTemplate="body" let-list>
+          <tr>
+            <td>{{ list.name }}</td>
+            <td>{{ list.listDate | date: 'shortDate' }}</td>
+            <td>{{ list.items.length }}</td>
+            <td><button pButton type="button" icon="pi pi-bolt" text (click)="recommend(list.id)"></button></td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </article>
+
+    <article class="panel wide" *ngIf="recommendation() as rec">
+      <h2>Recomendacion</h2>
+      <div class="summary-strip">
+        <span>Total estimado: <strong>{{ rec.estimatedTotal | currency: 'USD' }}</strong></span>
+        <span>Ahorro estimado: <strong>{{ rec.estimatedSavings | currency: 'USD' }}</strong></span>
+      </div>
+      <div class="store-group" *ngFor="let group of rec.storeGroups">
+        <h3>{{ group.storeName }} <span>{{ group.subtotal | currency: 'USD' }}</span></h3>
+        <p-table styleClass="shopping-table" [value]="group.items">
+          <ng-template pTemplate="header"><tr><th>Producto</th><th>Cantidad</th><th>Unitario</th><th>Estimado</th></tr></ng-template>
+          <ng-template pTemplate="body" let-item>
+            <tr><td>{{ item.productName }} - {{ item.variantName }}</td><td>{{ item.desiredQuantity }} {{ item.unit }}</td><td>{{ item.unitPrice | currency: 'USD' }}</td><td>{{ item.estimatedPrice | currency: 'USD' }}</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+      <div class="missing" *ngIf="rec.missingItems.length">
+        <h3>Sin precio</h3>
+        <p *ngFor="let item of rec.missingItems">{{ item.productName }} - {{ item.variantName }}</p>
+      </div>
+    </article>
+  </section>
+</section>

@@ -19,9 +19,8 @@ import {
   BudgetSummary,
   Category,
   DebtSummary,
+  FinancialGoal,
   FinanceOverviewSummary,
-  PurchaseGoalSummary,
-  SavingGoalSummary,
   TransactionType,
   TransactionSummary
 } from '../../core/models/finance.models';
@@ -74,7 +73,7 @@ interface AccountTile {
 interface GoalTile {
   id: string;
   title: string;
-  kind: 'Ahorro' | 'Compra';
+  kind: 'Ahorro' | 'Compra' | 'Personalizada';
   target: number;
   current: number;
   progress: number;
@@ -158,9 +157,8 @@ interface DashboardState {
   budgets: BudgetSummary[];
   categories: Category[];
   debts: DebtSummary[];
+  goals: FinancialGoal[];
   periods: AccountingPeriodSummary[];
-  purchaseGoals: PurchaseGoalSummary[];
-  savingGoals: SavingGoalSummary[];
   transactions: TransactionSummary[];
   weeklyTransactions: TransactionSummary[];
 }
@@ -213,8 +211,7 @@ export class DashboardComponent implements OnInit {
   categories = computed(() => this.state()?.categories ?? []);
   debts = computed(() => this.state()?.debts ?? []);
   periods = computed(() => this.state()?.periods ?? []);
-  purchaseGoals = computed(() => this.state()?.purchaseGoals ?? []);
-  savingGoals = computed(() => this.state()?.savingGoals ?? []);
+  goals = computed(() => this.state()?.goals ?? []);
   transactions = computed(() => this.state()?.transactions ?? []);
   weeklyTransactions = computed(() => this.state()?.weeklyTransactions ?? []);
   currentMonthWeeks = computed(() => this.buildCurrentMonthWeeks());
@@ -301,13 +298,9 @@ export class DashboardComponent implements OnInit {
       .filter((debt) => debt.type === 'Payable' && debt.status === 'Active')
       .reduce((total, debt) => total + debt.remainingAmount, 0)
   );
-  totalGoals = computed(() => this.savingGoals().length + this.purchaseGoals().length);
-  totalGoalTarget = computed(
-    () => this.sum(this.savingGoals(), 'targetAmount') + this.sum(this.purchaseGoals(), 'targetPrice')
-  );
-  totalGoalCurrent = computed(
-    () => this.sum(this.savingGoals(), 'currentAmount') + this.sum(this.purchaseGoals(), 'savedAmount')
-  );
+  totalGoals = computed(() => this.goals().length);
+  totalGoalTarget = computed(() => this.sum(this.goals(), 'targetAmount'));
+  totalGoalCurrent = computed(() => this.sum(this.goals(), 'currentAmount'));
   totalGoalRemaining = computed(() => Math.max(0, this.totalGoalTarget() - this.totalGoalCurrent()));
   totalGoalProgress = computed(() => (this.totalGoalTarget() > 0 ? Math.min(100, (this.totalGoalCurrent() / this.totalGoalTarget()) * 100) : 0));
   recentTransactions = computed(() => this.sortedTransactions().slice(0, 6));
@@ -325,7 +318,7 @@ export class DashboardComponent implements OnInit {
       .map((budget) => this.toBudgetTile(budget))
   );
   topGoals = computed(() =>
-    [...this.savingGoals(), ...this.purchaseGoals()]
+    this.goals()
       .slice()
       .sort((a, b) => {
         const progressDiff = this.goalProgress(a) - this.goalProgress(b);
@@ -339,7 +332,7 @@ export class DashboardComponent implements OnInit {
       .map((goal) => this.toGoalTile(goal))
   );
   detailedGoals = computed(() =>
-    [...this.savingGoals(), ...this.purchaseGoals()]
+    this.goals()
       .slice()
       .sort((a, b) => {
         const dueDiff = this.goalDueDateValue(a) - this.goalDueDateValue(b);
@@ -368,7 +361,7 @@ export class DashboardComponent implements OnInit {
   allBudgetUsage = computed(() => this.buildBudgetUsage());
   biMetrics = computed<BiMetric[]>(() => {
     const transfers = this.transactions().filter((transaction) => transaction.type === 'Transfer').length;
-    const monthlyNeed = [...this.savingGoals(), ...this.purchaseGoals()].reduce(
+    const monthlyNeed = this.goals().reduce(
       (total, goal) => total + Number(goal.suggestedMonthlyContribution ?? 0),
       0
     );
@@ -393,7 +386,7 @@ export class DashboardComponent implements OnInit {
         value: this.formatAmount(monthlyNeed, 'USD'),
         detail: 'Aporte sugerido a metas',
         tone: 'goal',
-        tooltip: 'Suma de los aportes mensuales sugeridos para tus metas de ahorro y compra.'
+        tooltip: 'Suma de los aportes mensuales sugeridos para tus metas financieras.'
       },
       {
         label: 'Por cobrar',
@@ -417,7 +410,8 @@ export class DashboardComponent implements OnInit {
     if (overview) {
       return {
         ...overview,
-        totalDebts: this.payableTotal()
+        totalDebts: this.payableTotal(),
+        goalsProgress: Number(overview.goalsProgress ?? this.averageProgress(this.goals()))
       };
     }
 
@@ -427,8 +421,7 @@ export class DashboardComponent implements OnInit {
       netBalance: this.totalIncome() - this.totalExpenses(),
       totalAssets: this.totalAccountBalance(),
       totalDebts: this.totalDebtRemaining(),
-      savingGoalsProgress: this.averageProgress(this.savingGoals()),
-      purchaseGoalsProgress: this.averageProgress(this.purchaseGoals())
+      goalsProgress: this.averageProgress(this.goals())
     };
   });
   overviewCards = computed<OverviewCard[]>(() => {
@@ -483,11 +476,11 @@ export class DashboardComponent implements OnInit {
       {
         label: 'Metas',
         value: this.totalGoals(),
-        detail: `${this.totalGoalProgress().toFixed(0)}% global completado`,
+        detail: `${summary.goalsProgress.toFixed(0)}% global completado`,
         icon: 'pi pi-flag',
         money: false,
         tone: 'goal',
-        tooltip: 'Cantidad de metas de ahorro y metas de compra registradas.'
+        tooltip: 'Cantidad de metas financieras registradas.'
       },
       {
         label: 'Por pagar',
@@ -533,9 +526,8 @@ export class DashboardComponent implements OnInit {
             budgets: [],
             categories: [],
             debts: [],
+            goals: [],
             periods: [],
-            purchaseGoals: [],
-            savingGoals: [],
             transactions: [],
             weeklyTransactions: []
           });
@@ -794,29 +786,13 @@ export class DashboardComponent implements OnInit {
     };
   }
 
-  private toGoalTile(goal: SavingGoalSummary | PurchaseGoalSummary): GoalTile {
-    if (this.isSavingGoal(goal)) {
-      return {
-        id: String(goal.id),
-        title: goal.name,
-        kind: 'Ahorro',
-        target: goal.targetAmount,
-        current: goal.currentAmount,
-        progress: this.goalProgress(goal),
-        status: goal.status,
-        dueDate: goal.targetDate ?? null,
-        suggestedMonthlyContribution: goal.suggestedMonthlyContribution ?? null,
-        accountId: goal.accountId ?? null,
-        priority: 0
-      };
-    }
-
+  private toGoalTile(goal: FinancialGoal): GoalTile {
     return {
       id: String(goal.id),
       title: goal.name,
-      kind: 'Compra',
-      target: goal.targetPrice,
-      current: goal.savedAmount,
+      kind: this.goalKindLabel(goal.type),
+      target: goal.targetAmount,
+      current: goal.currentAmount,
       progress: this.goalProgress(goal),
       status: goal.status,
       dueDate: goal.targetDate ?? null,
@@ -1073,9 +1049,9 @@ export class DashboardComponent implements OnInit {
     return labels[type] ?? type;
   }
 
-  private goalProgress(goal: SavingGoalSummary | PurchaseGoalSummary): number {
-    const target = this.isSavingGoal(goal) ? goal.targetAmount : goal.targetPrice;
-    const current = this.isSavingGoal(goal) ? goal.currentAmount : goal.savedAmount;
+  private goalProgress(goal: FinancialGoal): number {
+    const target = goal.targetAmount;
+    const current = goal.currentAmount;
 
     if (!target) {
       return 0;
@@ -1084,8 +1060,8 @@ export class DashboardComponent implements OnInit {
     return Math.min(100, (current / target) * 100);
   }
 
-  private goalDueDateValue(goal: SavingGoalSummary | PurchaseGoalSummary): number {
-    return this.parseDate(this.isSavingGoal(goal) ? goal.targetDate : goal.targetDate);
+  private goalDueDateValue(goal: FinancialGoal): number {
+    return this.parseDate(goal.targetDate);
   }
 
   private debtDueDateValue(debt: DebtSummary): number {
@@ -1122,7 +1098,7 @@ export class DashboardComponent implements OnInit {
     return items.filter((item) => item.type === type).reduce((total, item) => total + Number(item.amount ?? 0), 0);
   }
 
-  private averageProgress(goals: Array<SavingGoalSummary | PurchaseGoalSummary>): number {
+  private averageProgress(goals: FinancialGoal[]): number {
     if (!goals.length) {
       return 0;
     }
@@ -1130,8 +1106,14 @@ export class DashboardComponent implements OnInit {
     return goals.reduce((total, goal) => total + this.goalProgress(goal), 0) / goals.length;
   }
 
-  private isSavingGoal(goal: SavingGoalSummary | PurchaseGoalSummary): goal is SavingGoalSummary {
-    return 'currentAmount' in goal;
+  private goalKindLabel(type: FinancialGoal['type']): GoalTile['kind'] {
+    const labels: Record<FinancialGoal['type'], GoalTile['kind']> = {
+      Saving: 'Ahorro',
+      Purchase: 'Compra',
+      Custom: 'Personalizada'
+    };
+
+    return labels[type];
   }
 
   private dashboardQuery(): Record<string, string> {

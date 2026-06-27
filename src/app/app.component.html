@@ -5,7 +5,7 @@
   <router-outlet></router-outlet>
 } @else {
 <div class="app-shell" [class.sidebar-collapsed]="sidebarCollapsed">
-  <button type="button" class="sidebar-backdrop" [class.open]="menuOpen" aria-label="Cerrar menu lateral" (click)="menuOpen = false"></button>
+  <button type="button" class="sidebar-backdrop" [class.open]="menuOpen" aria-label="Cerrar menu lateral" (click)="closeMenu()"></button>
 
   <aside class="app-sidebar" [class.open]="menuOpen">
     <a class="brand" routerLink="/dashboard" (click)="menuOpen = false">
@@ -17,10 +17,44 @@
     </a>
 
     <nav>
-      <a *ngFor="let item of navItems" [routerLink]="item.route" routerLinkActive="active" (click)="menuOpen = false">
-        <i [class]="item.icon"></i>
-        <span>{{ item.label }}</span>
-      </a>
+      <ng-container *ngFor="let item of navItems">
+        <div class="nav-group" *ngIf="item.children?.length; else singleNavItem">
+          <button
+            type="button"
+            class="nav-parent"
+            [class.active]="isRouteActive(item.route, false)"
+            [class.expanded]="isSectionExpanded(item)"
+            (click)="toggleSection(item.label)"
+          >
+            <span class="nav-parent-main">
+              <i [class]="item.icon"></i>
+              <span>{{ item.label }}</span>
+            </span>
+            <i class="pi pi-angle-down nav-chevron"></i>
+          </button>
+
+          <div class="nav-children" *ngIf="isSectionExpanded(item)">
+            <a
+              *ngFor="let child of item.children"
+              [routerLink]="child.route"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              class="nav-child"
+              (click)="closeMenu()"
+            >
+              <i [class]="child.icon"></i>
+              <span>{{ child.label }}</span>
+            </a>
+          </div>
+        </div>
+
+        <ng-template #singleNavItem>
+          <a [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }" (click)="closeMenu()">
+            <i [class]="item.icon"></i>
+            <span>{{ item.label }}</span>
+          </a>
+        </ng-template>
+      </ng-container>
     </nav>
   </aside>
 

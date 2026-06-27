@@ -37,15 +37,38 @@ export const routes: Routes = [
         data: { resource: RESOURCE_DEFINITIONS['budgets'] }
       },
       {
-        path: 'goals/savings',
-        loadComponent: () => import('./features/resources/resource-page.component').then((m) => m.ResourcePageComponent),
-        data: { resource: RESOURCE_DEFINITIONS['savingGoals'] }
+        path: 'shopping',
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            redirectTo: 'products'
+          },
+          {
+            path: 'products',
+            loadComponent: () => import('./features/shopping/shopping-products-page.component').then((m) => m.ShoppingProductsPageComponent)
+          },
+          {
+            path: 'prices',
+            loadComponent: () => import('./features/shopping/shopping-prices-page.component').then((m) => m.ShoppingPricesPageComponent)
+          },
+          {
+            path: 'receipts',
+            loadComponent: () => import('./features/shopping/shopping-receipts-page.component').then((m) => m.ShoppingReceiptsPageComponent)
+          },
+          {
+            path: 'lists',
+            loadComponent: () => import('./features/shopping/shopping-lists-page.component').then((m) => m.ShoppingListsPageComponent)
+          }
+        ]
       },
       {
-        path: 'goals/purchases',
+        path: 'goals',
         loadComponent: () => import('./features/resources/resource-page.component').then((m) => m.ResourcePageComponent),
-        data: { resource: RESOURCE_DEFINITIONS['purchaseGoals'] }
+        data: { resource: RESOURCE_DEFINITIONS['financialGoals'] }
       },
+      { path: 'goals/savings', redirectTo: 'goals', pathMatch: 'full' },
+      { path: 'goals/purchases', redirectTo: 'goals', pathMatch: 'full' },
       {
         path: 'debts',
         loadComponent: () => import('./features/resources/resource-page.component').then((m) => m.ResourcePageComponent),

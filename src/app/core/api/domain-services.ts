@@ -14,15 +14,13 @@ import {
   AccountingPeriodSummary,
   BudgetSummary,
   DebtSummary,
+  FinancialGoal,
+  FinancialGoalContribution,
   FinanceOverviewSummary,
   GoalContribution,
   Id,
   PagedResult,
-  PurchaseGoal,
-  PurchaseGoalSummary,
   RecurringRule,
-  SavingGoal,
-  SavingGoalSummary,
   Tag,
   Transaction,
   TransactionSummary,
@@ -68,53 +66,39 @@ export class BudgetsService extends CrudService<Budget> {
 
 @Injectable({ providedIn: 'root' })
 export class GoalsService {
-  readonly savingGoals: CrudService<SavingGoal>;
-  readonly purchaseGoals: CrudService<PurchaseGoal>;
-
   constructor(private readonly api: ApiService) {
-    this.savingGoals = new (class extends CrudService<SavingGoal> {
-      constructor(apiService: ApiService) {
-        super(apiService, 'saving-goals');
-      }
-    })(this.api);
-
-    this.purchaseGoals = new (class extends CrudService<PurchaseGoal> {
-      constructor(apiService: ApiService) {
-        super(apiService, 'purchase-goals');
-      }
-    })(this.api);
   }
 
-  listSavingContributions(goalId: Id): Observable<GoalContribution[]> {
-    return this.api.get<GoalContribution[]>('saving-goal-contributions', { goalId });
+  list(query?: QueryParams): Observable<FinancialGoal[]> {
+    return this.api.get<FinancialGoal[]>('goals', query);
   }
 
-  addSavingContribution(goalId: Id, payload: Partial<GoalContribution>): Observable<GoalContribution> {
-    return this.api.post<GoalContribution>(`saving-goals/${goalId}/contributions`, payload);
+  create(payload: Partial<FinancialGoal>): Observable<FinancialGoal> {
+    return this.api.post<FinancialGoal>('goals', payload);
   }
 
-  updateSavingContribution(id: Id, payload: Partial<GoalContribution>): Observable<GoalContribution> {
-    return this.api.put<GoalContribution>(`saving-goal-contributions/${id}`, payload);
+  update(id: Id, payload: Partial<FinancialGoal>): Observable<FinancialGoal> {
+    return this.api.put<FinancialGoal>(`goals/${id}`, payload);
   }
 
-  deleteSavingContribution(id: Id): Observable<void> {
-    return this.api.delete<void>(`saving-goal-contributions/${id}`);
+  delete(id: Id): Observable<void> {
+    return this.api.delete<void>(`goals/${id}`);
   }
 
-  listPurchaseContributions(purchaseGoalId: Id): Observable<GoalContribution[]> {
-    return this.api.get<GoalContribution[]>('purchase-goal-contributions', { purchaseGoalId });
+  listContributions(goalId?: Id): Observable<FinancialGoalContribution[]> {
+    return this.api.get<FinancialGoalContribution[]>('goal-contributions', { goalId });
   }
 
-  addPurchaseContribution(purchaseGoalId: Id, payload: Partial<GoalContribution>): Observable<GoalContribution> {
-    return this.api.post<GoalContribution>(`purchase-goals/${purchaseGoalId}/contributions`, payload);
+  addContribution(goalId: Id, payload: Partial<GoalContribution>): Observable<FinancialGoal> {
+    return this.api.post<FinancialGoal>(`goals/${goalId}/contributions`, payload);
   }
 
-  updatePurchaseContribution(id: Id, payload: Partial<GoalContribution>): Observable<GoalContribution> {
-    return this.api.put<GoalContribution>(`purchase-goal-contributions/${id}`, payload);
+  updateContribution(id: Id, payload: Partial<GoalContribution>): Observable<void> {
+    return this.api.put<void>(`goal-contributions/${id}`, payload);
   }
 
-  deletePurchaseContribution(id: Id): Observable<void> {
-    return this.api.delete<void>(`purchase-goal-contributions/${id}`);
+  deleteContribution(id: Id): Observable<void> {
+    return this.api.delete<void>(`goal-contributions/${id}`);
   }
 }
 
@@ -198,8 +182,7 @@ export interface DashboardPayload {
   transactions: TransactionSummary[];
   weeklyTransactions: TransactionSummary[];
   budgets: BudgetSummary[];
-  savingGoals: SavingGoalSummary[];
-  purchaseGoals: PurchaseGoalSummary[];
+  goals: FinancialGoal[];
   debts: DebtSummary[];
   periods: AccountingPeriodSummary[];
 }
@@ -222,8 +205,7 @@ export class DashboardService {
         catchError(() => of([]))
       ),
       budgets: this.api.get<BudgetSummary[]>('budgets').pipe(catchError(() => of([]))),
-      savingGoals: this.api.get<SavingGoalSummary[]>('saving-goals').pipe(catchError(() => of([]))),
-      purchaseGoals: this.api.get<PurchaseGoalSummary[]>('purchase-goals').pipe(catchError(() => of([]))),
+      goals: this.api.get<FinancialGoal[]>('goals').pipe(catchError(() => of([]))),
       debts: this.api.get<DebtSummary[]>('debts').pipe(catchError(() => of([]))),
       periods: this.api.get<AccountingPeriodSummary[]>('accounting-periods').pipe(catchError(() => of([])))
     });

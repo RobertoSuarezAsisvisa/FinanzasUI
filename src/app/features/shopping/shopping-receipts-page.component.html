@@ -1,0 +1,57 @@
+<app-page-header
+  title="Compras - Facturas"
+  subtitle="Analiza facturas, revisa los productos detectados y confirma precios para tu historial."
+  icon="pi pi-receipt"
+></app-page-header>
+
+<section class="shopping-shell">
+  @if (message()) {
+    <p class="error">{{ message() }}</p>
+  }
+
+  <section class="grid-two">
+    <article class="panel">
+      <h2>Analizar factura</h2>
+      <input type="file" accept="image/*" (change)="chooseUpload($event)" />
+      <button pButton type="button" icon="pi pi-sparkles" label="Analizar con IA" [disabled]="!selectedUploadFile() || loading()" (click)="analyzeReceipt()"></button>
+      <p-table styleClass="shopping-table" [value]="receipts()">
+        <ng-template pTemplate="header"><tr><th>Archivo</th><th>Tienda</th><th>Estado</th><th></th></tr></ng-template>
+        <ng-template pTemplate="body" let-receipt>
+          <tr>
+            <td>{{ receipt.fileName }}</td>
+            <td>{{ receipt.storeName || receipt.detectedStoreName }}</td>
+            <td><p-tag [value]="receipt.status"></p-tag></td>
+            <td><button pButton type="button" icon="pi pi-eye" text (click)="selectReceipt(receipt)"></button></td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </article>
+
+    @if (selectedReceipt(); as receipt) {
+      <article class="panel">
+        <h2>Revision obligatoria</h2>
+        <p-select [options]="stores()" optionLabel="name" optionValue="id" placeholder="Tienda confirmada" [(ngModel)]="receiptConfirmStoreId"></p-select>
+        @if (receipt.lines.length === 0) {
+          <p class="empty-note">Gemini no detecto productos. Agrega las lineas manualmente para guardar precios.</p>
+        }
+        <p-table styleClass="shopping-table review-table" [value]="receipt.lines">
+          <ng-template pTemplate="header"><tr><th>Producto</th><th>Presentacion</th><th>Cantidad</th><th>Unidad</th><th>Total</th><th></th></tr></ng-template>
+          <ng-template pTemplate="body" let-line let-rowIndex="rowIndex">
+            <tr>
+              <td><input pInputText [(ngModel)]="line.productName" /></td>
+              <td><input pInputText [(ngModel)]="line.variantName" /></td>
+              <td><p-inputNumber [(ngModel)]="line.quantity" [min]="0.0001" [maxFractionDigits]="4"></p-inputNumber></td>
+              <td><p-select [options]="units" [(ngModel)]="line.unit"></p-select></td>
+              <td><p-inputNumber [(ngModel)]="line.totalPrice" mode="currency" currency="USD" locale="en-US"></p-inputNumber></td>
+              <td><button pButton type="button" icon="pi pi-trash" severity="danger" text (click)="removeReceiptLine(receipt, rowIndex)"></button></td>
+            </tr>
+          </ng-template>
+        </p-table>
+        <div class="actions">
+          <button pButton type="button" icon="pi pi-plus" label="Agregar producto" outlined (click)="addReceiptLine(receipt)"></button>
+          <button pButton type="button" icon="pi pi-check" label="Confirmar y guardar precios" [disabled]="!receiptConfirmStoreId || receipt.lines.length === 0" (click)="confirmReceipt()"></button>
+        </div>
+      </article>
+    }
+  </section>
+</section>

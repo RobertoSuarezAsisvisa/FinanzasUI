@@ -102,76 +102,42 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
       { key: 'color', label: 'Color', type: 'color', required: true, table: true, defaultValue: '#16794a' }
     ]
   },
-  savingGoals: {
-    key: 'savingGoals',
-    title: 'Metas De Ahorro',
-    subtitle: 'Objetivos, avance y aportes de ahorro.',
+  financialGoals: {
+    key: 'financialGoals',
+    title: 'Metas',
+    subtitle: 'Objetivos financieros de ahorro, compra o personalizados.',
     icon: 'pi pi-flag',
-    path: 'saving-goals',
+    path: 'goals',
     fields: [
       { key: 'name', label: 'Nombre', type: 'text', required: true, table: true },
-      { key: 'targetAmount', label: 'Meta', type: 'currency', required: true, table: true },
-      { key: 'currentAmount', label: 'Ahorrado', type: 'currency', readonly: true, table: true },
+      { key: 'targetAmount', label: 'Monto objetivo', type: 'currency', required: true, table: true },
+      { key: 'currentAmount', label: 'Acumulado', type: 'currency', readonly: true, table: true },
       { key: 'remainingAmount', label: 'Faltante', type: 'currency', readonly: true, table: true },
       { key: 'progress', label: 'Avance', type: 'text', readonly: true, table: true },
+      { key: 'type', label: 'Tipo', type: 'select', required: true, options: ['Saving', 'Purchase', 'Custom'], table: true, defaultValue: 'Saving' },
+      { key: 'status', label: 'Estado', type: 'select', required: true, options: ['InProgress', 'Ready', 'Completed', 'Cancelled'], table: true, defaultValue: 'InProgress' },
+      { key: 'priority', label: 'Prioridad', type: 'number', required: true, table: true, defaultValue: 1 },
       { key: 'suggestedMonthlyContribution', label: 'Aporte mensual', type: 'currency', readonly: true, table: true },
-      { key: 'accountId', label: 'Cuenta asociada', type: 'select', required: true, table: true },
-      { key: 'targetDate', label: 'Fecha objetivo', type: 'date', required: true, table: true },
-      { key: 'status', label: 'Estado', type: 'select', options: ['InProgress', 'Completed', 'Cancelled'], table: true }
-    ],
-    children: [
-      {
-        title: 'Aportes de ahorro',
-        listPath: 'saving-goal-contributions',
-        createPath: 'saving-goals/{id}/contributions',
-        updatePath: 'saving-goal-contributions/{id}',
-        deletePath: 'saving-goal-contributions/{id}',
-        queryParam: 'goalId',
-        parentParam: 'savingGoalId',
-        fields: [
-          { key: 'amount', label: 'Monto', type: 'currency', required: true, table: true },
-          { key: 'accountId', label: 'Cuenta a debitar', type: 'select', required: true, table: true },
-          { key: 'contributionDate', label: 'Fecha', type: 'date', required: true, table: true, showTime: true, defaultNow: true },
-          { key: 'transactionId', label: 'Transaccion', type: 'text', table: true, readonly: true }
-        ]
-      }
-    ]
-  },
-  purchaseGoals: {
-    key: 'purchaseGoals',
-    title: 'Metas De Compra',
-    subtitle: 'Compras planificadas, prioridad y aportes.',
-    icon: 'pi pi-shopping-bag',
-    path: 'purchase-goals',
-    fields: [
-      { key: 'name', label: 'Nombre', type: 'text', required: true, table: true },
-      { key: 'targetPrice', label: 'Precio objetivo', type: 'currency', required: true, table: true },
-      { key: 'savedAmount', label: 'Ahorrado', type: 'currency', readonly: true, table: true },
-      { key: 'remainingAmount', label: 'Faltante', type: 'currency', readonly: true, table: true },
-      { key: 'progress', label: 'Avance', type: 'text', readonly: true, table: true },
-      { key: 'suggestedMonthlyContribution', label: 'Aporte mensual', type: 'currency', readonly: true, table: true },
+      { key: 'accountId', label: 'Cuenta destino', type: 'select', table: true },
+      { key: 'targetDate', label: 'Fecha objetivo', type: 'date', table: true },
+      { key: 'completedAt', label: 'Completada en', type: 'date', visibleWhen: { key: 'status', value: 'Completed' } },
       { key: 'description', label: 'Descripcion', type: 'textarea', table: true },
-      { key: 'priority', label: 'Prioridad', type: 'number', table: true },
-      { key: 'url', label: 'URL', type: 'text' },
-      { key: 'accountId', label: 'Cuenta asociada', type: 'select', required: true, table: true },
-      { key: 'targetDate', label: 'Fecha objetivo', type: 'date', required: true, table: true },
-      { key: 'status', label: 'Estado', type: 'select', options: ['Saving', 'Completed', 'Cancelled'], table: true },
-      { key: 'purchasedAt', label: 'Comprado en', type: 'date' }
+      { key: 'url', label: 'URL', type: 'text', visibleWhen: { key: 'type', value: 'Purchase' } }
     ],
     children: [
       {
-        title: 'Aportes de compra',
-        listPath: 'purchase-goal-contributions',
-        createPath: 'purchase-goals/{id}/contributions',
-        updatePath: 'purchase-goal-contributions/{id}',
-        deletePath: 'purchase-goal-contributions/{id}',
-        queryParam: 'purchaseGoalId',
-        parentParam: 'purchaseGoalId',
+        title: 'Aportes',
+        listPath: 'goal-contributions',
+        createPath: 'goals/{id}/contributions',
+        updatePath: 'goal-contributions/{id}',
+        deletePath: 'goal-contributions/{id}',
+        queryParam: 'goalId',
+        parentParam: 'goalId',
         fields: [
           { key: 'amount', label: 'Monto', type: 'currency', required: true, table: true },
           { key: 'accountId', label: 'Cuenta a debitar', type: 'select', required: true, table: true },
           { key: 'contributionDate', label: 'Fecha', type: 'date', required: true, table: true, showTime: true, defaultNow: true },
-          { key: 'transactionId', label: 'Transaccion', type: 'text', table: true, readonly: true }
+          { key: 'transactionId', label: 'Transaccion', type: 'text', table: true }
         ]
       }
     ]

@@ -1,0 +1,171 @@
+<app-page-header
+  title="Compras - Productos"
+  subtitle="Administra tiendas, productos y presentaciones para mantener tu catalogo de compras organizado."
+  icon="pi pi-box"
+></app-page-header>
+
+<section class="shopping-shell">
+  @if (message()) {
+    <p class="error">{{ message() }}</p>
+  }
+
+  <p-tabs [value]="activeCatalogSection()" (valueChange)="onCatalogTabChange($event)" class="catalog-tabs">
+    <p-tablist aria-label="Catalogo de compras">
+      @for (section of catalogSections; track section.key) {
+        <p-tab [value]="section.key">
+          <span class="tab-caption">
+            <i [class]="section.icon" aria-hidden="true"></i>
+            <span>{{ section.label }}</span>
+          </span>
+        </p-tab>
+      }
+    </p-tablist>
+
+    <p-tabpanels>
+      <p-tabpanel value="stores">
+        <article class="panel">
+          <div class="panel-heading">
+            <h2>Tiendas</h2>
+            <div class="panel-actions">
+              <p-tag [value]="stores().length + ' registradas'"></p-tag>
+              <button pButton type="button" icon="pi pi-plus" label="Nueva tienda" (click)="openCreateStoreDialog()"></button>
+            </div>
+          </div>
+          <p-table styleClass="shopping-table" [value]="stores()">
+            <ng-template pTemplate="header"><tr><th>Nombre</th><th>Notas</th><th class="action-col"></th></tr></ng-template>
+            <ng-template pTemplate="body" let-store>
+              <tr>
+                <td>{{ store.name }}</td>
+                <td>{{ store.notes }}</td>
+                <td class="row-actions">
+                  <button pButton type="button" icon="pi pi-pencil" text aria-label="Editar tienda" (click)="openEditStoreDialog(store)"></button>
+                  <button pButton type="button" icon="pi pi-trash" severity="danger" text aria-label="Eliminar tienda" (click)="deleteStore(store)"></button>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </article>
+      </p-tabpanel>
+
+      <p-tabpanel value="products">
+        <section class="product-crud">
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Productos</h2>
+              <div class="panel-actions">
+                <p-tag [value]="products().length + ' registrados'"></p-tag>
+                <button pButton type="button" icon="pi pi-plus" label="Nuevo producto" (click)="openCreateProductDialog()"></button>
+              </div>
+            </div>
+            <p-table styleClass="shopping-table" [value]="products()">
+              <ng-template pTemplate="header"><tr><th>Producto</th><th>Notas</th><th class="action-col"></th></tr></ng-template>
+              <ng-template pTemplate="body" let-product>
+                <tr>
+                  <td>{{ product.name }}</td>
+                  <td>{{ product.notes }}</td>
+                  <td class="row-actions">
+                    <button pButton type="button" icon="pi pi-pencil" text aria-label="Editar producto" (click)="openEditProductDialog(product)"></button>
+                    <button pButton type="button" icon="pi pi-trash" severity="danger" text aria-label="Eliminar producto" (click)="deleteProduct(product)"></button>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </article>
+
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Presentaciones</h2>
+              <div class="panel-actions">
+                <p-tag [value]="variants().length + ' variantes'"></p-tag>
+                <button pButton type="button" icon="pi pi-plus" label="Nueva presentacion" [disabled]="products().length === 0" (click)="openCreateVariantDialog()"></button>
+              </div>
+            </div>
+            <p-table styleClass="shopping-table" [value]="variants()">
+              <ng-template pTemplate="header"><tr><th>Producto</th><th>Presentacion</th><th>Cantidad</th><th>Unidad</th><th class="action-col"></th></tr></ng-template>
+              <ng-template pTemplate="body" let-variant>
+                <tr>
+                  <td>{{ variant.productName }}</td>
+                  <td>{{ variant.name }}</td>
+                  <td>{{ variant.normalizedQuantity }}</td>
+                  <td>{{ variant.unit }}</td>
+                  <td class="row-actions">
+                    <button pButton type="button" icon="pi pi-pencil" text aria-label="Editar presentacion" (click)="openEditVariantDialog(variant)"></button>
+                    <button pButton type="button" icon="pi pi-trash" severity="danger" text aria-label="Eliminar presentacion" (click)="deleteVariant(variant)"></button>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </article>
+        </section>
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+
+  <p-dialog
+    [(visible)]="storeDialogVisible"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: 'min(32rem, 92vw)' }"
+    [header]="editingStoreId ? 'Editar tienda' : 'Nueva tienda'"
+    (onHide)="closeStoreDialog()"
+  >
+    <div class="dialog-form">
+      <input pInputText placeholder="Nombre de la tienda" [(ngModel)]="storeForm.name" />
+      <textarea pTextarea rows="4" placeholder="Notas" [(ngModel)]="storeForm.notes"></textarea>
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="dialog-actions">
+        <button pButton type="button" label="Cancelar" severity="secondary" text (click)="closeStoreDialog()"></button>
+        <button pButton type="button" [label]="editingStoreId ? 'Actualizar' : 'Guardar'" (click)="submitStoreDialog()"></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    [(visible)]="productDialogVisible"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: 'min(32rem, 92vw)' }"
+    [header]="editingProductId ? 'Editar producto' : 'Nuevo producto'"
+    (onHide)="closeProductDialog()"
+  >
+    <div class="dialog-form">
+      <input pInputText placeholder="Nombre del producto" [(ngModel)]="productForm.name" />
+      <textarea pTextarea rows="4" placeholder="Notas" [(ngModel)]="productForm.notes"></textarea>
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="dialog-actions">
+        <button pButton type="button" label="Cancelar" severity="secondary" text (click)="closeProductDialog()"></button>
+        <button pButton type="button" [label]="editingProductId ? 'Actualizar' : 'Guardar'" (click)="submitProductDialog()"></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    [(visible)]="variantDialogVisible"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: 'min(44rem, 94vw)' }"
+    [header]="editingVariantId ? 'Editar presentacion' : 'Nueva presentacion'"
+    (onHide)="closeVariantDialog()"
+  >
+    <div class="dialog-form">
+      <p-select [options]="products()" optionLabel="name" optionValue="id" placeholder="Producto" [(ngModel)]="variantForm.productId"></p-select>
+      <input pInputText placeholder="Nombre de la presentacion" [(ngModel)]="variantForm.name" />
+      <div class="dialog-grid-two">
+        <p-inputNumber [(ngModel)]="variantForm.normalizedQuantity" [min]="0.0001" [minFractionDigits]="0" [maxFractionDigits]="4"></p-inputNumber>
+        <p-select [options]="units" [(ngModel)]="variantForm.unit"></p-select>
+      </div>
+      <input pInputText placeholder="Codigo de barras" [(ngModel)]="variantForm.barcode" />
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="dialog-actions">
+        <button pButton type="button" label="Cancelar" severity="secondary" text (click)="closeVariantDialog()"></button>
+        <button pButton type="button" [label]="editingVariantId ? 'Actualizar' : 'Guardar'" (click)="submitVariantDialog()"></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</section>

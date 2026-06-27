@@ -418,9 +418,17 @@ export class ResourcePageComponent implements OnInit {
   }
 
   displayValue(item: Entity, field: ResourceField): unknown {
-    if (this.isSavingGoalsResource()) {
+    if (this.isFinancialGoalsResource()) {
       if (field.key === 'progress') {
-        return `${this.savingGoalProgress(item).toFixed(0)}%`;
+        return `${this.financialGoalProgress(item).toFixed(0)}%`;
+      }
+
+      if (field.key === 'type') {
+        return this.financialGoalTypeLabel(String(item[field.key] ?? ''));
+      }
+
+      if (field.key === 'status') {
+        return this.financialGoalStatusLabel(String(item[field.key] ?? ''));
       }
     }
 
@@ -436,10 +444,6 @@ export class ResourcePageComponent implements OnInit {
       if (field.key === 'validityType') {
         return this.validityTypeLabel(String(item[field.key] ?? ''));
       }
-    }
-
-    if (this.isPurchaseGoalsResource() && field.key === 'progress') {
-      return `${this.purchaseGoalProgress(item).toFixed(0)}%`;
     }
 
     if (this.isDebtsResource()) {
@@ -476,9 +480,9 @@ export class ResourcePageComponent implements OnInit {
   }
 
   tableCellValue(item: Entity, field: ResourceField): number | null {
-    if (this.isSavingGoalsResource()) {
+    if (this.isFinancialGoalsResource()) {
       if (field.key === 'remainingAmount') {
-        return this.savingGoalRemaining(item);
+        return this.financialGoalRemaining(item);
       }
 
       if (field.key === 'suggestedMonthlyContribution') {
@@ -496,16 +500,6 @@ export class ResourcePageComponent implements OnInit {
       }
     }
 
-    if (this.isPurchaseGoalsResource()) {
-      if (field.key === 'remainingAmount') {
-        return this.purchaseGoalRemaining(item);
-      }
-
-      if (field.key === 'suggestedMonthlyContribution') {
-        return Number(item['suggestedMonthlyContribution'] ?? 0);
-      }
-    }
-
     if (this.isDebtsResource() && field.key === 'paidAmount') {
       return this.debtPaidAmount(item);
     }
@@ -515,16 +509,12 @@ export class ResourcePageComponent implements OnInit {
     return value === null || value === undefined || value === '' ? null : Number(value);
   }
 
-  isSavingGoalProgressField(field: ResourceField): boolean {
-    return this.isSavingGoalsResource() && field.key === 'progress';
+  isFinancialGoalProgressField(field: ResourceField): boolean {
+    return this.isFinancialGoalsResource() && field.key === 'progress';
   }
 
   isBudgetUsageField(field: ResourceField): boolean {
     return this.isBudgetsResource() && field.key === 'usage';
-  }
-
-  isPurchaseGoalProgressField(field: ResourceField): boolean {
-    return this.isPurchaseGoalsResource() && field.key === 'progress';
   }
 
   isDebtProgressField(field: ResourceField): boolean {
@@ -659,50 +649,46 @@ export class ResourcePageComponent implements OnInit {
     return this.definition.key === 'transactions';
   }
 
-  isSavingGoalsResource(): boolean {
-    return this.definition.key === 'savingGoals';
+  isFinancialGoalsResource(): boolean {
+    return this.definition.key === 'financialGoals';
   }
 
   isBudgetsResource(): boolean {
     return this.definition.key === 'budgets';
   }
 
-  isPurchaseGoalsResource(): boolean {
-    return this.definition.key === 'purchaseGoals';
-  }
-
   isDebtsResource(): boolean {
     return this.definition.key === 'debts';
   }
 
-  savingGoalTargetTotal(): number {
+  financialGoalTargetTotal(): number {
     return this.items().reduce((total, goal) => total + Number(goal['targetAmount'] ?? 0), 0);
   }
 
-  savingGoalSavedTotal(): number {
+  financialGoalSavedTotal(): number {
     return this.items().reduce((total, goal) => total + Number(goal['currentAmount'] ?? 0), 0);
   }
 
-  savingGoalRemainingTotal(): number {
-    return Math.max(0, this.savingGoalTargetTotal() - this.savingGoalSavedTotal());
+  financialGoalRemainingTotal(): number {
+    return Math.max(0, this.financialGoalTargetTotal() - this.financialGoalSavedTotal());
   }
 
-  savingGoalMonthlyTotal(): number {
+  financialGoalMonthlyTotal(): number {
     return this.items().reduce((total, goal) => total + Number(goal['suggestedMonthlyContribution'] ?? 0), 0);
   }
 
-  savingGoalProgressTotal(): number {
-    const target = this.savingGoalTargetTotal();
+  financialGoalProgressTotal(): number {
+    const target = this.financialGoalTargetTotal();
 
-    return target > 0 ? Math.min(100, (this.savingGoalSavedTotal() / target) * 100) : 0;
+    return target > 0 ? Math.min(100, (this.financialGoalSavedTotal() / target) * 100) : 0;
   }
 
-  nextSavingGoalName(): string {
-    return String(this.nextSavingGoal()?.['name'] ?? 'Sin metas');
+  nextFinancialGoalName(): string {
+    return String(this.nextFinancialGoal()?.['name'] ?? 'Sin metas');
   }
 
-  nextSavingGoalDateLabel(): string {
-    const goal = this.nextSavingGoal();
+  nextFinancialGoalDateLabel(): string {
+    const goal = this.nextFinancialGoal();
     const date = goal?.['targetDate'];
 
     if (!date) {
@@ -745,43 +731,6 @@ export class ResourcePageComponent implements OnInit {
     }
 
     return `Mayor uso: ${budget['name']} (${this.budgetUsagePercent(budget).toFixed(0)}%)`;
-  }
-
-  purchaseGoalTargetTotal(): number {
-    return this.items().reduce((total, goal) => total + Number(goal['targetPrice'] ?? 0), 0);
-  }
-
-  purchaseGoalSavedTotal(): number {
-    return this.items().reduce((total, goal) => total + Number(goal['savedAmount'] ?? 0), 0);
-  }
-
-  purchaseGoalRemainingTotal(): number {
-    return Math.max(0, this.purchaseGoalTargetTotal() - this.purchaseGoalSavedTotal());
-  }
-
-  purchaseGoalMonthlyTotal(): number {
-    return this.items().reduce((total, goal) => total + Number(goal['suggestedMonthlyContribution'] ?? 0), 0);
-  }
-
-  purchaseGoalProgressTotal(): number {
-    const target = this.purchaseGoalTargetTotal();
-
-    return target > 0 ? Math.min(100, (this.purchaseGoalSavedTotal() / target) * 100) : 0;
-  }
-
-  topPurchaseGoalName(): string {
-    return String(this.topPurchaseGoal()?.['name'] ?? 'Sin metas');
-  }
-
-  topPurchaseGoalDateLabel(): string {
-    const goal = this.topPurchaseGoal();
-    const date = goal?.['targetDate'];
-
-    if (!date) {
-      return 'Sin fecha objetivo';
-    }
-
-    return new Intl.DateTimeFormat('es-EC', { dateStyle: 'medium' }).format(new Date(String(date)));
   }
 
   debtPayableTotal(): number {
@@ -1189,7 +1138,7 @@ export class ResourcePageComponent implements OnInit {
   showContributionActionSummary(): boolean {
     return !!this.activeChild
       && !!this.selectedParent
-      && (this.definition.key === 'savingGoals' || this.definition.key === 'purchaseGoals' || this.definition.key === 'debts')
+      && (this.definition.key === 'financialGoals' || this.definition.key === 'debts')
       && this.childForm.contains('amount')
       && this.childForm.contains('accountId');
   }
@@ -1325,40 +1274,43 @@ export class ResourcePageComponent implements OnInit {
     return summary;
   }
 
-  private savingGoalRemaining(goal: Entity): number {
+  private financialGoalRemaining(goal: Entity): number {
     return Math.max(0, Number(goal['targetAmount'] ?? 0) - Number(goal['currentAmount'] ?? 0));
   }
 
-  private savingGoalProgress(goal: Entity): number {
+  private financialGoalProgress(goal: Entity): number {
     const target = Number(goal['targetAmount'] ?? 0);
 
     return target > 0 ? Math.min(100, (Number(goal['currentAmount'] ?? 0) / target) * 100) : 0;
   }
 
-  private nextSavingGoal(): Entity | null {
-    return this.items()
-      .filter((goal) => String(goal['status'] ?? '') !== 'Completed' && String(goal['status'] ?? '') !== 'Cancelled')
-      .slice()
-      .sort((a, b) => this.dateValue(a['targetDate']) - this.dateValue(b['targetDate']))
-      .at(0) ?? null;
-  }
-
-  private purchaseGoalRemaining(goal: Entity): number {
-    return Math.max(0, Number(goal['targetPrice'] ?? 0) - Number(goal['savedAmount'] ?? 0));
-  }
-
-  private purchaseGoalProgress(goal: Entity): number {
-    const target = Number(goal['targetPrice'] ?? 0);
-
-    return target > 0 ? Math.min(100, (Number(goal['savedAmount'] ?? 0) / target) * 100) : 0;
-  }
-
-  private topPurchaseGoal(): Entity | null {
+  private nextFinancialGoal(): Entity | null {
     return this.items()
       .filter((goal) => String(goal['status'] ?? '') !== 'Completed' && String(goal['status'] ?? '') !== 'Cancelled')
       .slice()
       .sort((a, b) => Number(a['priority'] ?? 999) - Number(b['priority'] ?? 999) || this.dateValue(a['targetDate']) - this.dateValue(b['targetDate']))
       .at(0) ?? null;
+  }
+
+  private financialGoalTypeLabel(value: string): string {
+    const labels: Record<string, string> = {
+      Saving: 'Ahorro',
+      Purchase: 'Compra',
+      Custom: 'Personalizada'
+    };
+
+    return labels[value] ?? (value || '-');
+  }
+
+  private financialGoalStatusLabel(value: string): string {
+    const labels: Record<string, string> = {
+      InProgress: 'En progreso',
+      Ready: 'Lista',
+      Completed: 'Completada',
+      Cancelled: 'Cancelada'
+    };
+
+    return labels[value] ?? (value || '-');
   }
 
   private debtPaidAmount(debt: Entity): number {
@@ -1594,13 +1546,17 @@ export class ResourcePageComponent implements OnInit {
           validators.push(Validators.required);
         }
         if (field.type === 'number' || field.type === 'currency') {
-          validators.push(Validators.min(0));
+          validators.push(Validators.min(this.positiveAmountField(field) ? 0.01 : 0));
         }
 
         group[field.key] = new FormControl(this.initialValue(field, item?.[field.key]), validators);
       });
 
     return new FormGroup(group);
+  }
+
+  private positiveAmountField(field: ResourceField): boolean {
+    return (this.isFinancialGoalsResource() && field.key === 'targetAmount') || (!!this.activeChild && field.key === 'amount');
   }
 
   private initialValue(field: ResourceField, value: unknown): unknown {

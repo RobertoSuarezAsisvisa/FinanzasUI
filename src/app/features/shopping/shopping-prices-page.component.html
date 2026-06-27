@@ -1,0 +1,83 @@
+<app-page-header
+  title="Compras - Precios"
+  subtitle="Registra y consulta precios por tienda para comparar costos y detectar mejores opciones."
+  icon="pi pi-dollar"
+></app-page-header>
+
+<section class="shopping-shell">
+  @if (message()) {
+    <p class="error">{{ message() }}</p>
+  }
+
+  <section class="panel">
+    <div class="panel-heading">
+      <h2>Precios por tienda</h2>
+      <div class="panel-actions">
+        <p-tag [value]="prices().length + ' registrados'"></p-tag>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-plus"
+          label="Nuevo precio"
+          [disabled]="stores().length === 0 || variants().length === 0"
+          (click)="openCreatePriceDialog()"
+        ></button>
+      </div>
+    </div>
+
+    <p-table styleClass="shopping-table" [value]="prices()">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Tienda</th>
+          <th>Producto</th>
+          <th>Precio</th>
+          <th>Cantidad</th>
+          <th>Unitario</th>
+          <th>Fecha</th>
+          <th>Fuente</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-price>
+        <tr>
+          <td>{{ price.storeName }}</td>
+          <td>{{ price.productName }} - {{ price.variantName }}</td>
+          <td>{{ price.totalPrice | currency: 'USD' }}</td>
+          <td>{{ price.normalizedQuantity }} {{ price.unit }}</td>
+          <td>{{ price.unitPrice | currency: 'USD' }}</td>
+          <td>{{ price.observedAt | date: 'shortDate' }}</td>
+          <td><p-tag [value]="price.source"></p-tag></td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </section>
+
+  <p-dialog
+    [(visible)]="priceDialogVisible"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: 'min(52rem, 96vw)' }"
+    header="Nuevo precio"
+    (onHide)="closePriceDialog()"
+  >
+    <div class="dialog-form">
+      <div class="dialog-grid-two">
+        <p-select [options]="stores()" optionLabel="name" optionValue="id" placeholder="Tienda" [(ngModel)]="priceForm.storeId"></p-select>
+        <p-select [options]="variantOptions()" optionLabel="label" optionValue="value" placeholder="Producto" [(ngModel)]="priceForm.productVariantId"></p-select>
+      </div>
+      <div class="price-form">
+        <p-inputNumber [(ngModel)]="priceForm.totalPrice" mode="currency" currency="USD" locale="en-US" [min]="0.01"></p-inputNumber>
+        <p-inputNumber [(ngModel)]="priceForm.normalizedQuantity" [min]="0.0001" [maxFractionDigits]="4"></p-inputNumber>
+        <p-select [options]="units" [(ngModel)]="priceForm.unit"></p-select>
+        <input pInputText type="date" [(ngModel)]="priceForm.observedAt" />
+      </div>
+      <textarea pTextarea rows="3" placeholder="Notas" [(ngModel)]="priceForm.notes"></textarea>
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="dialog-actions">
+        <button pButton type="button" label="Cancelar" severity="secondary" text (click)="closePriceDialog()"></button>
+        <button pButton type="button" label="Guardar precio" (click)="submitPriceDialog()"></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</section>

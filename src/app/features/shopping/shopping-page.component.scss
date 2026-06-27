@@ -1,0 +1,284 @@
+.shopping-shell {
+  display: grid;
+  gap: 1rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.tabs,
+.actions,
+.summary-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.tab-link {
+  text-decoration: none;
+}
+
+.catalog-shell,
+.product-crud {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.catalog-tabs {
+  display: grid;
+  gap: 1rem;
+}
+
+.tab-caption {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.segmented-tabs {
+  align-items: center;
+  background: #eef7f1;
+  border: 1px solid #cfe7d8;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0.35rem;
+}
+
+:host ::ng-deep .catalog-tabs .p-tabpanels {
+  padding: 1rem 0 0;
+}
+
+.segmented-tabs .p-button {
+  justify-content: center;
+}
+
+.grid-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.panel {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--surface-border, #d8dee4);
+  border-radius: 8px;
+  background: var(--surface-card, #fff);
+  overflow: hidden;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+.panel-heading {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.panel-actions,
+.dialog-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.panel h2,
+.store-group h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.inline-form,
+.variant-form,
+.price-form,
+.list-item-row {
+  display: grid;
+  gap: 0.75rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.dialog-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.dialog-grid-two {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inline-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.variant-form {
+  grid-template-columns:
+    minmax(11rem, 1.1fr)
+    minmax(13rem, 1.3fr)
+    minmax(7rem, 0.6fr)
+    minmax(9rem, 0.7fr)
+    minmax(11rem, 1fr)
+    minmax(8rem, auto);
+}
+
+.price-form {
+  grid-template-columns:
+    minmax(10rem, 1fr)
+    minmax(16rem, 1.5fr)
+    minmax(8rem, 0.7fr)
+    minmax(8rem, 0.7fr)
+    minmax(8rem, 0.7fr)
+    minmax(9rem, 0.8fr)
+    minmax(10rem, auto);
+}
+
+.list-item-row {
+  grid-template-columns: minmax(16rem, 1fr) minmax(8rem, 0.45fr) minmax(8rem, 0.45fr) auto;
+}
+
+textarea,
+input {
+  width: 100%;
+  min-width: 0;
+}
+
+.error {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  color: #8a1f11;
+  background: #fff1ed;
+}
+
+.empty-note {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  color: #755600;
+  background: #fff8db;
+}
+
+.summary-strip {
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: #f6f8fa;
+}
+
+.store-group,
+.missing {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.store-group h3 {
+  display: flex;
+  justify-content: space-between;
+}
+
+.action-col {
+  width: 7rem;
+}
+
+.row-actions {
+  white-space: nowrap;
+}
+
+.row-actions .p-button {
+  width: 2.25rem;
+}
+
+:host ::ng-deep .p-select,
+:host ::ng-deep .p-inputnumber,
+:host ::ng-deep .p-inputnumber-input,
+:host ::ng-deep .p-inputtext,
+:host ::ng-deep .p-textarea,
+:host ::ng-deep .p-button {
+  max-width: 100%;
+}
+
+:host ::ng-deep .p-select,
+:host ::ng-deep .p-inputnumber,
+:host ::ng-deep .p-button {
+  width: 100%;
+}
+
+:host ::ng-deep .p-select-label,
+:host ::ng-deep .p-inputtext {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .shopping-table .p-datatable-wrapper {
+  overflow-x: auto;
+}
+
+:host ::ng-deep .shopping-table table {
+  min-width: 0;
+  width: 100%;
+}
+
+:host ::ng-deep .shopping-table th,
+:host ::ng-deep .shopping-table td {
+  white-space: normal;
+  word-break: break-word;
+}
+
+:host ::ng-deep .review-table table {
+  min-width: 54rem;
+}
+
+@media (max-width: 1100px) {
+  .grid-two {
+    grid-template-columns: 1fr;
+  }
+
+  .segmented-tabs,
+  .variant-form,
+  .price-form,
+  .list-item-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .tabs,
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tabs .p-button,
+  .actions .p-button,
+  .segmented-tabs,
+  .inline-form,
+  .variant-form,
+  .price-form,
+  .list-item-row,
+  .dialog-grid-two {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .panel-actions,
+  .dialog-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

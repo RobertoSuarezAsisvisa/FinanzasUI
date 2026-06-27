@@ -55,7 +55,7 @@
   overflow: hidden;
 }
 
-.saving-goals-overview {
+.financial-goals-overview {
   background:
     linear-gradient(90deg, rgba(22, 121, 74, 0.08), transparent 42%),
     var(--surface-card);
@@ -75,7 +75,6 @@
   margin-bottom: 1rem;
 }
 
-.purchase-goals-context,
 .debt-context {
   display: grid;
   gap: 0.85rem;
@@ -83,7 +82,6 @@
   margin-bottom: 1rem;
 }
 
-.purchase-goals-context article,
 .debt-context article {
   align-items: flex-start;
   background: var(--surface-card);
@@ -95,7 +93,6 @@
   padding: 0.95rem;
 }
 
-.purchase-goals-context i,
 .debt-context i {
   align-items: center;
   background: #eef7f1;
@@ -115,21 +112,17 @@
   color: #c84f4f;
 }
 
-.purchase-goals-context strong,
-.purchase-goals-context span,
 .debt-context strong,
 .debt-context span {
   display: block;
 }
 
-.purchase-goals-context strong,
 .debt-context strong {
   color: var(--text-color);
   font-size: 0.94rem;
   line-height: 1.25;
 }
 
-.purchase-goals-context span,
 .debt-context span {
   color: var(--text-color-secondary);
   font-size: 0.82rem;
@@ -192,7 +185,6 @@
   padding: 1rem;
 }
 
-.purchase-goals-overview,
 .debt-overview {
   background:
     linear-gradient(90deg, rgba(22, 121, 74, 0.08), transparent 42%),
@@ -217,7 +209,6 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.purchase-goal-kpi,
 .debt-kpi {
   background: rgba(255, 255, 255, 0.84);
   border: 1px solid #dce8e0;
@@ -226,9 +217,6 @@
   padding: 0.85rem;
 }
 
-.purchase-goal-kpi span,
-.purchase-goal-kpi strong,
-.purchase-goal-kpi small,
 .debt-kpi span,
 .debt-kpi strong,
 .debt-kpi small {
@@ -236,7 +224,6 @@
   min-width: 0;
 }
 
-.purchase-goal-kpi span,
 .debt-kpi span {
   color: var(--text-color-secondary);
   font-size: 0.72rem;
@@ -244,7 +231,6 @@
   text-transform: uppercase;
 }
 
-.purchase-goal-kpi strong,
 .debt-kpi strong {
   color: var(--text-color);
   font-size: 1.1rem;
@@ -256,7 +242,6 @@
   white-space: nowrap;
 }
 
-.purchase-goal-kpi small,
 .debt-kpi small {
   color: var(--text-color-secondary);
   font-size: 0.78rem;
@@ -303,7 +288,7 @@
   margin-top: 0.28rem;
 }
 
-.saving-goal-kpi {
+.financial-goal-kpi {
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid #dce8e0;
   border-radius: 0.55rem;
@@ -311,21 +296,21 @@
   padding: 0.85rem;
 }
 
-.saving-goal-kpi span,
-.saving-goal-kpi strong,
-.saving-goal-kpi small {
+.financial-goal-kpi span,
+.financial-goal-kpi strong,
+.financial-goal-kpi small {
   display: block;
   min-width: 0;
 }
 
-.saving-goal-kpi span {
+.financial-goal-kpi span {
   color: var(--text-color-secondary);
   font-size: 0.72rem;
   font-weight: 850;
   text-transform: uppercase;
 }
 
-.saving-goal-kpi strong {
+.financial-goal-kpi strong {
   color: var(--text-color);
   font-size: 1.1rem;
   font-variant-numeric: tabular-nums;
@@ -336,16 +321,15 @@
   white-space: nowrap;
 }
 
-.saving-goal-kpi small {
+.financial-goal-kpi small {
   color: var(--text-color-secondary);
   font-size: 0.78rem;
   line-height: 1.35;
   margin-top: 0.28rem;
 }
 
-.purchase-goals-progress,
 .budget-overview-progress,
-.saving-goals-progress {
+.financial-goals-progress {
   grid-column: 1 / -1;
 }
 
@@ -1026,7 +1010,7 @@
     grid-template-columns: repeat(3, minmax(10rem, 1fr));
   }
 
-  .saving-goals-overview {
+  .financial-goals-overview {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1034,7 +1018,6 @@
     grid-template-columns: 1fr;
   }
 
-  .purchase-goals-context,
   .debt-context {
     grid-template-columns: 1fr;
   }
@@ -1043,7 +1026,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .purchase-goals-overview,
   .debt-overview {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1062,9 +1044,8 @@
   .form-section,
   .transaction-filter-grid,
   .debt-filter-grid,
-  .saving-goals-overview,
+  .financial-goals-overview,
   .budget-overview,
-  .purchase-goals-overview,
   .debt-overview {
     grid-template-columns: 1fr;
   }
