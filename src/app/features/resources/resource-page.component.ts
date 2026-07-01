@@ -15,6 +15,7 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
+import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
@@ -22,7 +23,7 @@ import { ToolbarModule } from 'primeng/toolbar';
 
 import { ApiService, QueryParams } from '../../core/api/api.service';
 import { ResourceChild, ResourceDefinition, ResourceField, ResourceOption } from '../../core/resource/resource.types';
-import { TransactionAttachment } from '../../core/models/finance.models';
+import { BudgetUsageHistoryPoint, TransactionAttachment } from '../../core/models/finance.models';
 import { ConfirmDeleteService } from '../../shared/confirm-delete/confirm-delete.service';
 import { MoneyCellComponent } from '../../shared/money-cell/money-cell.component';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
@@ -79,6 +80,7 @@ type AmortizationRow = {
     ProgressSpinnerModule,
     SelectModule,
     TableModule,
+    TabsModule,
     TagModule,
     TextareaModule,
     ToggleSwitchModule,
@@ -115,7 +117,13 @@ export class ResourcePageComponent implements OnInit {
   creatingTag = false;
   categoryFilterValue = '';
   creatingCategory = false;
-  budgetTransactions: Entity[] = [];
+  budgetDetailVisible = false;
+  selectedBudget: Entity | null = null;
+  budgetDetailTab = 'current';
+  budgetHistoryGroupBy = 'month';
+  budgetHistory = signal<BudgetUsageHistoryPoint[]>([]);
+  budgetDetailTransactions = signal<Entity[]>([]);
+  budgetDetailLoading = signal(false);
   transactionAttachments = signal<TransactionAttachment[]>([]);
   attachmentLoading = signal(false);
   uploadQueue: File[] = [];
@@ -605,8 +613,16 @@ export class ResourcePageComponent implements OnInit {
     return this.definition.key === 'accounts' && this.form.get('accountType')?.value === 'Crypto';
   }
 
+  isCreditCardAccountForm(): boolean {
+    return this.definition.key === 'accounts' && this.form.get('accountType')?.value === 'CreditCard';
+  }
+
   isAccountsResource(): boolean {
     return this.definition.key === 'accounts';
+  }
+
+  isCreditCardsResource(): boolean {
+    return this.definition.key === 'creditCards';
   }
 
   activeAccounts(): Entity[] {
@@ -622,11 +638,14 @@ export class ResourcePageComponent implements OnInit {
   }
 
   activeAccountBalanceTotal(): number {
-    return this.activeAccounts().reduce((total, account) => total + Number(account['balance'] ?? 0), 0);
+    return this.activeAccounts()
+      .filter((account) => account['accountType'] !== 'CreditCard')
+      .reduce((total, account) => total + Number(account['balance'] ?? 0), 0);
   }
 
   accountBalanceByPurpose(purpose: string): number {
     return this.activeAccounts()
+      .filter((account) => account['accountType'] !== 'CreditCard')
       .filter((account) => this.accountPurpose(account) === purpose)
       .reduce((total, account) => total + Number(account['balance'] ?? 0), 0);
   }
@@ -643,6 +662,38 @@ export class ResourcePageComponent implements OnInit {
     }
 
     return `${count} cuentas activas incluidas`;
+  }
+
+  creditCardLimitTotal(): number {
+    return this.items().reduce((total, card) => total + Number(card['creditLimit'] ?? 0), 0);
+  }
+
+  creditCardUsedTotal(): number {
+    return this.items().reduce((total, card) => total + Number(card['outstandingBalance'] ?? 0), 0);
+  }
+
+  creditCardAvailableTotal(): number {
+    return this.items().reduce((total, card) => total + Number(card['availableCredit'] ?? 0), 0);
+  }
+
+  creditCardUsagePercent(): number {
+    const limit = this.creditCardLimitTotal();
+    return limit > 0 ? Math.min(100, (this.creditCardUsedTotal() / limit) * 100) : 0;
+  }
+
+  nextCreditCardDueDateLabel(): string {
+    const dueDates = this.items()
+      .map((card) => card['nextDueDate'])
+      .filter(Boolean)
+      .map((value) => new Date(String(value)))
+      .filter((date) => !Number.isNaN(date.getTime()))
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    if (!dueDates.length) {
+      return 'Sin cortes cerrados';
+    }
+
+    return dueDates[0].toLocaleDateString();
   }
 
   isTransactionsResource(): boolean {
@@ -711,7 +762,7 @@ export class ResourcePageComponent implements OnInit {
   }
 
   budgetRemainingTotal(): number {
-    return Math.max(0, this.budgetLimitTotal() - this.budgetUsedTotal());
+    return this.activeBudgets().reduce((total, budget) => total + this.budgetRemainingAmount(budget), 0);
   }
 
   budgetUsageTotal(): number {
@@ -862,6 +913,10 @@ export class ResourcePageComponent implements OnInit {
     return this.transactionFields(['accountId', 'toAccountId', 'categoryId', 'budgetId']);
   }
 
+  transactionCreditCardFields(): ResourceField[] {
+    return this.transactionFields(['creditCardOperationType', 'isForeignCreditCardTransaction', 'installmentCount', 'merchant']);
+  }
+
   onSelectFieldChange(fieldKey: string, value: unknown): void {
     if (!this.isTransactionsResource()) {
       return;
@@ -884,10 +939,10 @@ export class ResourcePageComponent implements OnInit {
 
     const amount = Number(this.form.get('amount')?.value ?? 0);
     const currentTransactionId = this.editingItem ? this.itemId(this.editingItem) : null;
-    const spent = this.budgetTransactions
-      .filter((transaction) => this.transactionBelongsToBudget(transaction, budget))
-      .filter((transaction) => !currentTransactionId || String(transaction['id']) !== currentTransactionId)
-      .reduce((total, transaction) => total + Number(transaction['amount'] ?? 0), 0);
+    const currentAmount = currentTransactionId && String(this.editingItem?.['budgetId'] ?? '') === budget.value
+      ? Number(this.editingItem?.['amount'] ?? 0)
+      : 0;
+    const spent = Number(budget.usedAmount ?? 0) - currentAmount;
     const projectedSpent = spent + amount;
     const remaining = budget.limitAmount - projectedSpent;
 
@@ -1105,6 +1160,23 @@ export class ResourcePageComponent implements OnInit {
 
   accountCryptoFields(): ResourceField[] {
     return this.accountFields(['cryptoSymbol', 'cryptoNetwork', 'cryptoQuantity', 'cryptoAvgBuyPriceUsd']);
+  }
+
+  accountCreditCardFields(): ResourceField[] {
+    return this.accountFields([
+      'creditCardIssuer',
+      'creditCardBrand',
+      'creditCardProductName',
+      'creditCardLastFour',
+      'creditLimit',
+      'statementClosingDay',
+      'paymentDueDay',
+      'paymentMode',
+      'rewardsProgram',
+      'statementDelivery',
+      'interestNominalAnnual',
+      'interestEffectiveAnnual'
+    ]);
   }
 
   accountStateFields(): ResourceField[] {
@@ -1369,20 +1441,15 @@ export class ResourcePageComponent implements OnInit {
   }
 
   private budgetUsedAmount(budget: Entity): number {
-    return this.budgetTransactions
-      .filter((transaction) => String(transaction['budgetId'] ?? '') === this.itemId(budget))
-      .filter((transaction) => this.isWithinBudgetPeriod(String(transaction['transactionDate'] ?? ''), this.budgetAsOption(budget)))
-      .reduce((total, transaction) => total + Number(transaction['amount'] ?? 0), 0);
+    return Number(budget['usedAmount'] ?? 0);
   }
 
   private budgetRemainingAmount(budget: Entity): number {
-    return Math.max(0, Number(budget['limitAmount'] ?? 0) - this.budgetUsedAmount(budget));
+    return Number(budget['remainingAmount'] ?? Math.max(0, Number(budget['limitAmount'] ?? 0) - this.budgetUsedAmount(budget)));
   }
 
   private budgetUsagePercent(budget: Entity): number {
-    const limit = Number(budget['limitAmount'] ?? 0);
-
-    return limit > 0 ? Math.min(100, (this.budgetUsedAmount(budget) / limit) * 100) : 0;
+    return Number(budget['usagePercent'] ?? 0);
   }
 
   private budgetAsOption(budget: Entity): ResourceOption {
@@ -1393,14 +1460,22 @@ export class ResourcePageComponent implements OnInit {
       periodType: String(budget['periodType'] ?? ''),
       validityType: String(budget['validityType'] ?? ''),
       periodStart: budget['periodStart'] ? String(budget['periodStart']) : null,
-      periodEnd: budget['periodEnd'] ? String(budget['periodEnd']) : null
+      periodEnd: budget['periodEnd'] ? String(budget['periodEnd']) : null,
+      usedAmount: Number(budget['usedAmount'] ?? 0),
+      remainingAmount: Number(budget['remainingAmount'] ?? 0),
+      usagePercent: Number(budget['usagePercent'] ?? 0),
+      transactionCount: Number(budget['transactionCount'] ?? 0),
+      isOverLimit: Boolean(budget['isOverLimit']),
+      currentPeriodStart: budget['currentPeriodStart'] ? String(budget['currentPeriodStart']) : null,
+      currentPeriodEnd: budget['currentPeriodEnd'] ? String(budget['currentPeriodEnd']) : null
     };
   }
 
   private periodTypeLabel(value: string): string {
     const labels: Record<string, string> = {
+      Daily: 'Diario',
+      Weekly: 'Semanal',
       Monthly: 'Mensual',
-      Quarterly: 'Trimestral',
       Yearly: 'Anual'
     };
 
@@ -1410,7 +1485,7 @@ export class ResourcePageComponent implements OnInit {
   private validityTypeLabel(value: string): string {
     const labels: Record<string, string> = {
       Indefinite: 'Indefinida',
-      Fixed: 'Fija'
+      FixedPeriod: 'Fija'
     };
 
     return labels[value] ?? (value || '-');
@@ -1465,6 +1540,26 @@ export class ResourcePageComponent implements OnInit {
       this.form.get('termMonths')?.valueChanges.subscribe(() => this.syncDebtDueDateFromLoanTerms());
       this.syncDebtDueDateFromLoanTerms();
     }
+
+    if (this.isTransactionsResource()) {
+      this.form.get('type')?.valueChanges.subscribe(() => this.syncTransactionCategoryValidator());
+      this.syncTransactionCategoryValidator();
+    }
+  }
+
+  private syncTransactionCategoryValidator(): void {
+    const categoryControl = this.form.get('categoryId');
+    if (!categoryControl) {
+      return;
+    }
+
+    if (this.form.get('type')?.value === 'Expense') {
+      categoryControl.addValidators(Validators.required);
+    } else {
+      categoryControl.removeValidators(Validators.required);
+    }
+
+    categoryControl.updateValueAndValidity({ emitEvent: false });
   }
 
   private syncDebtDueDateFromLoanTerms(): void {
@@ -1556,7 +1651,9 @@ export class ResourcePageComponent implements OnInit {
   }
 
   private positiveAmountField(field: ResourceField): boolean {
-    return (this.isFinancialGoalsResource() && field.key === 'targetAmount') || (!!this.activeChild && field.key === 'amount');
+    return (this.isFinancialGoalsResource() && field.key === 'targetAmount')
+      || (this.isBudgetsResource() && field.key === 'limitAmount')
+      || (!!this.activeChild && field.key === 'amount');
   }
 
   private initialValue(field: ResourceField, value: unknown): unknown {
@@ -1633,18 +1730,29 @@ export class ResourcePageComponent implements OnInit {
   }
 
   private normalizeList(response: unknown): Entity[] {
+    const normalizeItems = (items: Entity[]) => {
+      if (!this.isCreditCardsResource()) {
+        return items;
+      }
+
+      return items.map((item) => ({
+        ...item,
+        name: item['name'] ?? item['accountName']
+      }));
+    };
+
     if (Array.isArray(response)) {
-      return response as Entity[];
+      return normalizeItems(response as Entity[]);
     }
 
     if (response && typeof response === 'object') {
       const object = response as Record<string, unknown>;
       if (Array.isArray(object['items'])) {
-        return object['items'] as Entity[];
+        return normalizeItems(object['items'] as Entity[]);
       }
 
       const firstArray = Object.values(object).find(Array.isArray);
-      return (firstArray as Entity[]) ?? [];
+      return normalizeItems((firstArray as Entity[]) ?? []);
     }
 
     return [];
@@ -1665,7 +1773,7 @@ export class ResourcePageComponent implements OnInit {
 
   private loadLookupOptions(): void {
     if (this.isBudgetsResource()) {
-      this.loadBudgetTrackingTransactions();
+      this.loadBudgetLookups();
       return;
     }
 
@@ -1676,10 +1784,14 @@ export class ResourcePageComponent implements OnInit {
     this.api.get<Entity[]>('accounts').subscribe({
       next: (accounts) => {
         const options = this.normalizeList(accounts).map((account) => ({
-          label: `${account['name']} - ${this.formatMoney(Number(account['balance'] ?? 0), String(account['currency'] ?? 'USD'))}`,
+          label: this.accountLookupLabel(account),
           value: String(account['id']),
           balance: Number(account['balance'] ?? 0),
-          currency: String(account['currency'] ?? 'USD')
+          currency: String(account['currency'] ?? 'USD'),
+          accountType: String(account['accountType'] ?? ''),
+          outstandingBalance: Number(account['outstandingBalance'] ?? 0),
+          availableCredit: Number(account['availableCredit'] ?? 0),
+          creditLimit: Number(account['creditLimit'] ?? 0)
         }));
         this.dynamicOptions['accountId'] = options;
         this.dynamicOptions['toAccountId'] = options;
@@ -1694,7 +1806,30 @@ export class ResourcePageComponent implements OnInit {
     this.loadTransactionLookups();
   }
 
-  private optionLabel(fieldKey: string, value: unknown): string | null {
+  private accountLookupLabel(account: Entity): string {
+    const currency = String(account['currency'] ?? 'USD');
+    if (account['accountType'] === 'CreditCard') {
+      return `${account['name']} - usado ${this.formatMoney(Number(account['outstandingBalance'] ?? 0), currency)} / disp. ${this.formatMoney(Number(account['availableCredit'] ?? 0), currency)}`;
+    }
+
+    return `${account['name']} - ${this.formatMoney(Number(account['balance'] ?? 0), currency)}`;
+  }
+
+  private loadBudgetLookups(): void {
+    this.api.get<Entity[]>('categories').subscribe({
+      next: (categories) => {
+        this.dynamicOptions['categoryId'] = this.normalizeList(categories)
+          .filter((category) => category['type'] === 'Expense')
+          .map((category) => ({
+            label: String(category['name']),
+            value: String(category['id'])
+          }));
+      },
+      error: () => undefined
+    });
+  }
+
+  optionLabel(fieldKey: string, value: unknown): string | null {
     if (!value) {
       return null;
     }
@@ -1743,24 +1878,19 @@ export class ResourcePageComponent implements OnInit {
           .map((budget) => ({
             label: `${budget['name']} - ${this.formatMoney(Number(budget['limitAmount'] ?? 0), 'USD')}`,
             value: String(budget['id']),
-            categoryId: budget['categoryId'] ? String(budget['categoryId']) : undefined,
             limitAmount: Number(budget['limitAmount'] ?? 0),
             periodType: String(budget['periodType'] ?? ''),
             validityType: String(budget['validityType'] ?? ''),
             periodStart: budget['periodStart'] ? String(budget['periodStart']) : null,
-            periodEnd: budget['periodEnd'] ? String(budget['periodEnd']) : null
+            periodEnd: budget['periodEnd'] ? String(budget['periodEnd']) : null,
+            usedAmount: Number(budget['usedAmount'] ?? 0),
+            remainingAmount: Number(budget['remainingAmount'] ?? 0),
+            usagePercent: Number(budget['usagePercent'] ?? 0),
+            transactionCount: Number(budget['transactionCount'] ?? 0),
+            isOverLimit: Boolean(budget['isOverLimit']),
+            currentPeriodStart: budget['currentPeriodStart'] ? String(budget['currentPeriodStart']) : null,
+            currentPeriodEnd: budget['currentPeriodEnd'] ? String(budget['currentPeriodEnd']) : null
           }));
-      },
-      error: () => undefined
-    });
-
-    this.loadBudgetTrackingTransactions();
-  }
-
-  private loadBudgetTrackingTransactions(): void {
-    this.api.get<unknown>('transactions', { page: 1, pageSize: 1000 }).subscribe({
-      next: (response) => {
-        this.budgetTransactions = this.normalizeList(response).filter((transaction) => transaction['type'] === 'Expense');
       },
       error: () => undefined
     });
@@ -1812,6 +1942,95 @@ export class ResourcePageComponent implements OnInit {
     }
 
     return true;
+  }
+
+  showBudgetDetail(item: Entity): boolean {
+    return this.isBudgetsResource() && !!item['id'];
+  }
+
+  openBudgetDetail(item: Entity): void {
+    this.selectedBudget = item;
+    this.budgetDetailTab = 'current';
+    this.budgetDetailVisible = true;
+    this.loadBudgetDetail();
+  }
+
+  onBudgetDetailTabChange(value: string | number): void {
+    this.budgetDetailTab = String(value);
+    if (this.budgetDetailTab === 'history' || this.budgetDetailTab === 'transactions') {
+      this.loadBudgetDetail();
+    }
+  }
+
+  onBudgetHistoryGroupChange(value: string | number): void {
+    this.budgetHistoryGroupBy = String(value);
+    this.loadBudgetHistory();
+  }
+
+  selectedBudgetPeriodLabel(): string {
+    if (!this.selectedBudget) {
+      return '-';
+    }
+
+    const start = this.selectedBudget['currentPeriodStart'];
+    const end = this.selectedBudget['currentPeriodEnd'];
+    if (!start || !end) {
+      return '-';
+    }
+
+    return `${new Intl.DateTimeFormat('es-EC', { dateStyle: 'medium' }).format(new Date(String(start)))} - ${new Intl.DateTimeFormat('es-EC', { dateStyle: 'medium' }).format(new Date(String(end)))}`;
+  }
+
+  budgetHistoryGroups(): ResourceOption[] {
+    return [
+      { label: 'Diario', value: 'day' },
+      { label: 'Semanal', value: 'week' },
+      { label: 'Mensual', value: 'month' }
+    ];
+  }
+
+  private loadBudgetDetail(): void {
+    if (!this.selectedBudget) {
+      return;
+    }
+
+    if (this.budgetDetailTab === 'history') {
+      this.loadBudgetHistory();
+    }
+
+    if (this.budgetDetailTab === 'transactions') {
+      this.loadBudgetTransactions();
+    }
+  }
+
+  private loadBudgetHistory(): void {
+    if (!this.selectedBudget) {
+      return;
+    }
+
+    this.budgetDetailLoading.set(true);
+    this.api.get<BudgetUsageHistoryPoint[]>(`budgets/${this.itemId(this.selectedBudget)}/usage-history`, { groupBy: this.budgetHistoryGroupBy }).subscribe({
+      next: (history) => {
+        this.budgetHistory.set(history);
+        this.budgetDetailLoading.set(false);
+      },
+      error: (error) => this.fail(error, 'No se pudo cargar el historico del presupuesto.', () => this.budgetDetailLoading.set(false))
+    });
+  }
+
+  private loadBudgetTransactions(): void {
+    if (!this.selectedBudget) {
+      return;
+    }
+
+    this.budgetDetailLoading.set(true);
+    this.api.get<unknown>('transactions', { budgetId: this.itemId(this.selectedBudget), type: 'Expense', page: 1, pageSize: 1000 }).subscribe({
+      next: (response) => {
+        this.budgetDetailTransactions.set(this.normalizeList(response));
+        this.budgetDetailLoading.set(false);
+      },
+      error: (error) => this.fail(error, 'No se pudieron cargar las transacciones del presupuesto.', () => this.budgetDetailLoading.set(false))
+    });
   }
 
   private applyTransactionStateFromUrl(): void {

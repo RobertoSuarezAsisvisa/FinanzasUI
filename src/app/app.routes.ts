@@ -27,6 +27,11 @@ export const routes: Routes = [
         data: { resource: RESOURCE_DEFINITIONS['accounts'] }
       },
       {
+        path: 'credit-cards',
+        loadComponent: () => import('./features/resources/resource-page.component').then((m) => m.ResourcePageComponent),
+        data: { resource: RESOURCE_DEFINITIONS['creditCards'] }
+      },
+      {
         path: 'transactions',
         loadComponent: () => import('./features/resources/resource-page.component').then((m) => m.ResourcePageComponent),
         data: { resource: RESOURCE_DEFINITIONS['transactions'] }

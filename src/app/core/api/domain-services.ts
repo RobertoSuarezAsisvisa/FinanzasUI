@@ -204,7 +204,7 @@ export class DashboardService {
         map((response) => response.items),
         catchError(() => of([]))
       ),
-      budgets: this.api.get<BudgetSummary[]>('budgets').pipe(catchError(() => of([]))),
+      budgets: this.api.get<BudgetSummary[]>('budgets', query).pipe(catchError(() => of([]))),
       goals: this.api.get<FinancialGoal[]>('goals').pipe(catchError(() => of([]))),
       debts: this.api.get<DebtSummary[]>('debts').pipe(catchError(() => of([]))),
       periods: this.api.get<AccountingPeriodSummary[]>('accounting-periods').pipe(catchError(() => of([])))

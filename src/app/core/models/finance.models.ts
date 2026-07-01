@@ -1,8 +1,12 @@
 export type Id = string;
 
 export type TransactionType = 'Income' | 'Expense' | 'Transfer';
-export type AccountType = 'Bank' | 'Cash' | 'DigitalWallet' | 'Crypto' | string;
+export type AccountType = 'Bank' | 'Cash' | 'DigitalWallet' | 'Crypto' | 'CreditCard' | string;
 export type AccountPurpose = 'Spending' | 'Savings' | 'Investment' | 'Reserved' | string;
+export type CreditCardBrand = 'DinersClub' | 'Discover' | 'Visa' | 'Mastercard' | 'Other' | string;
+export type CreditCardPaymentMode = 'Manual' | 'AutomaticMinimum' | 'AutomaticTotal' | string;
+export type CreditCardStatementDelivery = 'Virtual' | 'Physical' | 'Both' | string;
+export type CreditCardOperationType = 'Purchase' | 'Payment' | 'Refund' | 'Fee' | 'Interest' | 'CashAdvance' | string;
 export type FinancialGoalType = 'Saving' | 'Purchase' | 'Custom';
 export type FinancialGoalStatus = 'InProgress' | 'Ready' | 'Completed' | 'Cancelled';
 export type GoalStatus = FinancialGoalStatus | string;
@@ -25,7 +29,46 @@ export interface Account {
   cryptoNetwork?: string | null;
   cryptoQuantity?: number | null;
   cryptoAvgBuyPriceUsd?: number | null;
+  creditCardId?: Id | null;
+  creditCardIssuer?: string | null;
+  creditCardBrand?: CreditCardBrand | null;
+  creditCardProductName?: string | null;
+  creditCardLastFour?: string | null;
+  creditLimit?: number | null;
+  outstandingBalance?: number | null;
+  availableCredit?: number | null;
+  statementClosingDay?: number | null;
+  paymentDueDay?: number | null;
+  paymentMode?: CreditCardPaymentMode | null;
+  rewardsProgram?: string | null;
+  statementDelivery?: CreditCardStatementDelivery | null;
+  interestNominalAnnual?: number | null;
+  interestEffectiveAnnual?: number | null;
   isActive?: boolean;
+}
+
+export interface CreditCard {
+  id?: Id;
+  accountId?: Id;
+  accountName?: string;
+  name?: string;
+  currency: string;
+  issuer: string;
+  brand: CreditCardBrand;
+  productName?: string | null;
+  lastFour?: string | null;
+  creditLimit: number;
+  outstandingBalance?: number;
+  availableCredit?: number;
+  statementClosingDay: number;
+  paymentDueDay: number;
+  paymentMode?: CreditCardPaymentMode;
+  rewardsProgram?: string | null;
+  statementDelivery?: CreditCardStatementDelivery;
+  interestNominalAnnual?: number | null;
+  interestEffectiveAnnual?: number | null;
+  isActive?: boolean;
+  nextDueDate?: string | null;
 }
 
 export interface Category {
@@ -58,18 +101,29 @@ export interface Transaction {
   recurringRuleId?: Id | null;
   tagIds?: Id[];
   attachmentCount?: number;
+  creditCardOperationType?: CreditCardOperationType | null;
+  creditCardStatementId?: Id | null;
+  isForeignCreditCardTransaction?: boolean;
+  installmentCount?: number | null;
+  merchant?: string | null;
 }
 
 export interface Budget {
   id?: Id;
   name: string;
-  categoryId?: Id | null;
   limitAmount: number;
   periodType: string;
   validityType: string;
   periodStart?: string | null;
   periodEnd?: string | null;
   isActive?: boolean;
+  usedAmount?: number;
+  remainingAmount?: number;
+  usagePercent?: number;
+  transactionCount?: number;
+  isOverLimit?: boolean;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
 }
 
 export interface GoalContribution {
@@ -225,6 +279,21 @@ export interface AccountSummary {
   cryptoNetwork?: string | null;
   cryptoQuantity?: number | null;
   cryptoAvgBuyPriceUsd?: number | null;
+  creditCardId?: Id | null;
+  creditCardIssuer?: string | null;
+  creditCardBrand?: CreditCardBrand | null;
+  creditCardProductName?: string | null;
+  creditCardLastFour?: string | null;
+  creditLimit?: number | null;
+  outstandingBalance?: number | null;
+  availableCredit?: number | null;
+  statementClosingDay?: number | null;
+  paymentDueDay?: number | null;
+  paymentMode?: CreditCardPaymentMode | null;
+  rewardsProgram?: string | null;
+  statementDelivery?: CreditCardStatementDelivery | null;
+  interestNominalAnnual?: number | null;
+  interestEffectiveAnnual?: number | null;
 }
 
 export interface TransactionSummary {
@@ -241,6 +310,12 @@ export interface TransactionSummary {
   transactionDate: string;
   tagIds?: Id[];
   attachmentCount: number;
+  creditCardAccountId?: Id | null;
+  creditCardOperationType?: CreditCardOperationType | null;
+  creditCardStatementId?: Id | null;
+  isForeignCreditCardTransaction?: boolean;
+  installmentCount?: number | null;
+  merchant?: string | null;
 }
 
 export interface TransactionAttachment {
@@ -263,13 +338,31 @@ export interface PagedResult<T> {
 export interface BudgetSummary {
   id: Id;
   name: string;
-  categoryId?: Id | null;
   limitAmount: number;
   periodType: string;
   validityType: string;
   periodStart?: string | null;
   periodEnd?: string | null;
   isActive: boolean;
+  usedAmount: number;
+  remainingAmount: number;
+  usagePercent: number;
+  transactionCount: number;
+  isOverLimit: boolean;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+}
+
+export interface BudgetUsageHistoryPoint {
+  periodStart: string;
+  periodEnd: string;
+  groupKey: string;
+  spentAmount: number;
+  limitAmount: number;
+  remainingAmount: number;
+  usagePercent: number;
+  transactionCount: number;
+  isOverLimit: boolean;
 }
 
 export type FinancialGoalSummary = FinancialGoal & { id: Id };

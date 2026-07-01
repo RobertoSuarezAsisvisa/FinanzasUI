@@ -640,7 +640,7 @@
         <div class="budget-detail-head">
           <div>
             <strong>{{ budget.name }}</strong>
-            <span>{{ budget.periodType }} · {{ budget.transactions.length }} transacciones</span>
+            <span>{{ budget.periodType }} · {{ budget.transactionCount }} transacciones</span>
           </div>
           <strong>{{ budget.spent | currency: 'USD' : 'symbol' : '1.0-2' }} / {{ budget.limit | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
         </div>

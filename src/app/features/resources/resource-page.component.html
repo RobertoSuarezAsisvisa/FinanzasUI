@@ -152,7 +152,7 @@
     <i class="pi pi-calendar" aria-hidden="true"></i>
     <div>
       <strong>Cómo funciona el periodo</strong>
-      <span>El periodo define cada cuánto se evalúa el límite: mensual, trimestral o anual.</span>
+      <span>El periodo define cada cuánto se evalúa el límite: diario, semanal, mensual o anual.</span>
     </div>
   </article>
   <article>
@@ -310,6 +310,32 @@
   </article>
 </section>
 
+<section class="budget-overview credit-card-overview" *ngIf="isCreditCardsResource()">
+  <article class="budget-kpi">
+    <span>Cupo total</span>
+    <strong>{{ creditCardLimitTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ tableItems().length }} tarjetas registradas</small>
+  </article>
+  <article class="budget-kpi">
+    <span>Usado</span>
+    <strong>{{ creditCardUsedTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>{{ creditCardUsagePercent() | number: '1.0-0' }}% del cupo</small>
+  </article>
+  <article class="budget-kpi">
+    <span>Disponible</span>
+    <strong>{{ creditCardAvailableTotal() | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+    <small>Credito aun no utilizado</small>
+  </article>
+  <article class="budget-kpi">
+    <span>Proximo pago</span>
+    <strong>{{ nextCreditCardDueDateLabel() }}</strong>
+    <small>Segun cortes cerrados</small>
+  </article>
+  <div class="budget-overview-progress">
+    <p-progressBar [value]="creditCardUsagePercent()" [showValue]="false"></p-progressBar>
+  </div>
+</section>
+
 <section class="resource-card">
   <p-table
     [value]="tableItems()"
@@ -384,6 +410,17 @@
             (click)="selectParent(item)"
             title="Detalle"
           ></button>
+          <button
+            *ngIf="showBudgetDetail(item)"
+            pButton
+            type="button"
+            icon="pi pi-chart-line"
+            severity="secondary"
+            text
+            rounded
+            (click)="openBudgetDetail(item)"
+            title="Analisis"
+          ></button>
           <button pButton type="button" icon="pi pi-pencil" text rounded (click)="openEdit(item)" title="Editar"></button>
           <button pButton type="button" icon="pi pi-trash" severity="danger" text rounded (click)="remove(item)" title="Eliminar"></button>
         </td>
@@ -403,6 +440,104 @@
     </ng-template>
   </p-table>
 </section>
+
+<p-dialog
+  [(visible)]="budgetDetailVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: 'min(1080px, 94vw)' }"
+  styleClass="child-detail-dialog"
+  *ngIf="selectedBudget"
+>
+  <ng-template pTemplate="header">
+    <div class="child-drawer-title">
+      <span>Analisis de presupuesto</span>
+      <strong>{{ selectedBudget['name'] }}</strong>
+    </div>
+  </ng-template>
+
+  <p-tabs [value]="budgetDetailTab" (valueChange)="onBudgetDetailTabChange($event)" class="budget-detail-tabs">
+    <p-tablist aria-label="Detalle de presupuesto">
+      <p-tab value="current"><i class="pi pi-chart-pie" aria-hidden="true"></i><span>Actual</span></p-tab>
+      <p-tab value="history"><i class="pi pi-chart-line" aria-hidden="true"></i><span>Historico</span></p-tab>
+      <p-tab value="transactions"><i class="pi pi-receipt" aria-hidden="true"></i><span>Transacciones</span></p-tab>
+    </p-tablist>
+
+    <p-tabpanels>
+      <p-tabpanel value="current">
+        <section class="budget-detail-grid">
+          <article>
+            <span>Periodo actual</span>
+            <strong>{{ selectedBudgetPeriodLabel() }}</strong>
+          </article>
+          <article>
+            <span>Límite</span>
+            <strong>{{ selectedBudget['limitAmount'] | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+          </article>
+          <article>
+            <span>Usado</span>
+            <strong>{{ selectedBudget['usedAmount'] | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+          </article>
+          <article>
+            <span>Disponible</span>
+            <strong [class.warning]="selectedBudget['isOverLimit']">{{ selectedBudget['remainingAmount'] | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+          </article>
+        </section>
+        <div class="budget-detail-progress">
+          <p-progressBar [value]="selectedBudget['usagePercent'] || 0" [showValue]="false"></p-progressBar>
+          <small [class.warning]="selectedBudget['isOverLimit']">
+            {{ selectedBudget['usagePercent'] || 0 | number: '1.0-0' }}% usado · {{ selectedBudget['transactionCount'] || 0 }} transacciones
+          </small>
+        </div>
+      </p-tabpanel>
+
+      <p-tabpanel value="history">
+        <div class="budget-history-toolbar">
+          <p-select
+            [options]="budgetHistoryGroups()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="budgetHistoryGroupBy"
+            [ngModelOptions]="{ standalone: true }"
+            (ngModelChange)="onBudgetHistoryGroupChange($event)"
+          ></p-select>
+        </div>
+        <p-table [value]="budgetHistory()" [loading]="budgetDetailLoading()" responsiveLayout="scroll" styleClass="child-detail-table">
+          <ng-template pTemplate="header">
+            <tr><th>Periodo</th><th>Usado</th><th>Disponible</th><th>Uso</th><th>Movimientos</th><th>Estado</th></tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td>{{ row.periodStart | date: 'mediumDate' }} - {{ row.periodEnd | date: 'mediumDate' }}</td>
+              <td>{{ row.spentAmount | currency: 'USD' : 'symbol' : '1.0-2' }}</td>
+              <td>{{ row.remainingAmount | currency: 'USD' : 'symbol' : '1.0-2' }}</td>
+              <td>{{ row.usagePercent | number: '1.0-0' }}%</td>
+              <td>{{ row.transactionCount }}</td>
+              <td><p-tag [severity]="row.isOverLimit ? 'danger' : 'success'" [value]="row.isOverLimit ? 'Sobre limite' : 'Dentro'"></p-tag></td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-tabpanel>
+
+      <p-tabpanel value="transactions">
+        <p-table [value]="budgetDetailTransactions()" [loading]="budgetDetailLoading()" responsiveLayout="scroll" styleClass="child-detail-table">
+          <ng-template pTemplate="header">
+            <tr><th>Fecha</th><th>Descripcion</th><th>Monto</th><th>Categoria</th></tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-transaction>
+            <tr>
+              <td>{{ transaction.transactionDate | date: 'medium' }}</td>
+              <td>{{ transaction.description || '-' }}</td>
+              <td>{{ transaction.amount | currency: transaction.currency || 'USD' : 'symbol' : '1.0-2' }}</td>
+              <td>{{ optionLabel('categoryId', transaction.categoryId) || '-' }}</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+</p-dialog>
 
 <p-dialog
   [(visible)]="childDetailVisible"
@@ -691,6 +826,22 @@
         </label>
       </section>
 
+      <section class="form-section account-section credit-card-section" *ngIf="isCreditCardAccountForm()">
+        <div class="form-section-head">
+          <i class="pi pi-credit-card"></i>
+          <div>
+            <strong>Datos de tarjeta</strong>
+            <span>Cupo, corte, fecha de pago y configuracion bancaria.</span>
+          </div>
+        </div>
+
+        <label *ngFor="let field of accountCreditCardFields()" class="field-control">
+          <span>{{ field.label }}</span>
+          <ng-container *ngTemplateOutlet="fieldInput; context: { $implicit: field }"></ng-container>
+          <small *ngIf="isInvalid(field)">Campo requerido o valor invalido.</small>
+        </label>
+      </section>
+
       <section class="form-section account-status-section">
         <label *ngFor="let field of accountStateFields()" class="field-control toggle-field">
           <span>{{ field.label }}</span>
@@ -729,6 +880,7 @@
           <label *ngFor="let field of transactionAccountFields()" class="field-control">
             <span>{{ field.label }}</span>
             <ng-container *ngTemplateOutlet="fieldInput; context: { $implicit: field }"></ng-container>
+            <small *ngIf="field.key === 'categoryId' && form.get('type')?.value === 'Expense'" class="field-hint">Requerida para gastos.</small>
             <small *ngIf="isInvalid(field)">Campo requerido o valor invalido.</small>
           </label>
 
@@ -754,6 +906,22 @@
               {{ budget.percent | number: '1.0-0' }}% usado después de guardar esta transacción.
             </small>
           </div>
+        </section>
+
+        <section class="form-section transaction-section" *ngIf="transactionCreditCardFields().length">
+          <div class="form-section-head">
+            <i class="pi pi-credit-card"></i>
+            <div>
+              <strong>Tarjeta de credito</strong>
+              <span>Tipo de operacion, comercio, exterior y cuotas.</span>
+            </div>
+          </div>
+
+          <label *ngFor="let field of transactionCreditCardFields()" class="field-control">
+            <span>{{ field.label }}</span>
+            <ng-container *ngTemplateOutlet="fieldInput; context: { $implicit: field }"></ng-container>
+            <small *ngIf="isInvalid(field)">Campo requerido o valor invalido.</small>
+          </label>
         </section>
 
         <section class="form-section transaction-section transaction-detail-section">

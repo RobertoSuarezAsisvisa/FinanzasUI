@@ -31,6 +31,7 @@ export class AppComponent {
   readonly navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'pi pi-chart-line', route: '/dashboard' },
     { label: 'Cuentas', icon: 'pi pi-wallet', route: '/accounts' },
+    { label: 'Tarjetas', icon: 'pi pi-credit-card', route: '/credit-cards' },
     { label: 'Transacciones', icon: 'pi pi-arrow-right-arrow-left', route: '/transactions' },
     { label: 'Presupuestos', icon: 'pi pi-chart-pie', route: '/budgets' },
     {

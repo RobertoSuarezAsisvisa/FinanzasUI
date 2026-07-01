@@ -5,12 +5,22 @@ export interface ResourceOption {
   value: string;
   balance?: number;
   currency?: string;
-  categoryId?: string;
   limitAmount?: number;
   periodType?: string;
   validityType?: string;
   periodStart?: string | null;
   periodEnd?: string | null;
+  usedAmount?: number;
+  remainingAmount?: number;
+  usagePercent?: number;
+  transactionCount?: number;
+  isOverLimit?: boolean;
+  currentPeriodStart?: string | null;
+  currentPeriodEnd?: string | null;
+  accountType?: string;
+  outstandingBalance?: number;
+  availableCredit?: number;
+  creditLimit?: number;
 }
 
 export interface ResourceField {

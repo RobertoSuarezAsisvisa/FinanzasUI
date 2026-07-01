@@ -141,13 +141,13 @@ interface BiSlice {
 
 interface BudgetUsage {
   id: string;
-  categoryId?: string | null;
   name: string;
   limit: number;
   spent: number;
   percent: number;
   remaining: number;
   periodType: string;
+  transactionCount: number;
   transactions: TransactionSummary[];
 }
 
@@ -195,8 +195,8 @@ export class DashboardComponent implements OnInit {
   dailyTransactionsDialogVisible = false;
   healthOk = signal(false);
   lastRefreshed = signal<Date | null>(null);
-  dateFrom = signal<Date | null>(null);
-  dateTo = signal<Date | null>(null);
+  dateFrom = signal<Date | null>(this.currentMonthStart());
+  dateTo = signal<Date | null>(this.currentMonthEnd());
   selectedWeekIndex = signal(0);
   selectedFlowDateKey = signal<string | null>(null);
   dailyTypeFilter = signal<'All' | TransactionType>('All');
@@ -543,19 +543,22 @@ export class DashboardComponent implements OnInit {
   }
 
   applyDateFilter(): void {
+    this.normalizeDateRange();
+    this.selectedWeekIndex.set(this.currentWeekIndexInMonth());
     this.load();
   }
 
   clearDateFilter(): void {
     this.dateFrom.set(null);
     this.dateTo.set(null);
+    this.selectedWeekIndex.set(this.currentWeekIndexInMonth());
     this.load();
   }
 
   setCurrentMonth(): void {
-    const today = new Date();
-    this.dateFrom.set(new Date(today.getFullYear(), today.getMonth(), 1));
-    this.dateTo.set(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+    this.dateFrom.set(this.currentMonthStart());
+    this.dateTo.set(this.currentMonthEnd());
+    this.selectedWeekIndex.set(this.currentWeekIndexInMonth());
     this.load();
   }
 
@@ -565,6 +568,7 @@ export class DashboardComponent implements OnInit {
     from.setDate(today.getDate() - 6);
     this.dateFrom.set(from);
     this.dateTo.set(today);
+    this.selectedWeekIndex.set(this.currentWeekIndexInMonth());
     this.load();
   }
 
@@ -572,6 +576,7 @@ export class DashboardComponent implements OnInit {
     const today = new Date();
     this.dateFrom.set(today);
     this.dateTo.set(today);
+    this.selectedWeekIndex.set(this.currentWeekIndexInMonth());
     this.load();
   }
 
@@ -655,7 +660,7 @@ export class DashboardComponent implements OnInit {
   }
 
   budgetTooltip(budget: BudgetUsage): string {
-    return `${budget.name}: ${this.formatAmount(budget.spent, 'USD')} usados de ${this.formatAmount(budget.limit, 'USD')}. Queda ${this.formatAmount(budget.remaining, 'USD')}. ${budget.transactions.length} transacciones.`;
+    return `${budget.name}: ${this.formatAmount(budget.spent, 'USD')} usados de ${this.formatAmount(budget.limit, 'USD')}. Queda ${this.formatAmount(budget.remaining, 'USD')}. ${budget.transactionCount} transacciones.`;
   }
 
   flowPointTooltip(point: FlowPoint): string {
@@ -951,17 +956,16 @@ export class DashboardComponent implements OnInit {
         const budgetTransactions = this.transactions()
           .filter((transaction) => transaction.type === 'Expense')
           .filter((transaction) => this.transactionMatchesBudget(transaction, budget));
-        const spent = budgetTransactions.reduce((total, transaction) => total + transaction.amount, 0);
 
         return {
           name: budget.name,
           id: String(budget.id),
-          categoryId: budget.categoryId ?? null,
           limit: budget.limitAmount,
-          spent,
-          percent: budget.limitAmount > 0 ? Math.min(100, (spent / budget.limitAmount) * 100) : 0,
-          remaining: Math.max(0, budget.limitAmount - spent),
+          spent: budget.usedAmount,
+          percent: budget.usagePercent,
+          remaining: budget.remainingAmount,
           periodType: budget.periodType,
+          transactionCount: budget.transactionCount,
           transactions: budgetTransactions
         };
       })
@@ -1123,6 +1127,16 @@ export class DashboardComponent implements OnInit {
     };
   }
 
+  private normalizeDateRange(): void {
+    const from = this.dateFrom();
+    const to = this.dateTo();
+
+    if (from && to && from > to) {
+      this.dateFrom.set(to);
+      this.dateTo.set(from);
+    }
+  }
+
   private currentWeekQuery(): Record<string, string> {
     const week = this.selectedWeek();
 
@@ -1133,9 +1147,9 @@ export class DashboardComponent implements OnInit {
   }
 
   private buildCurrentMonthWeeks(): WeekOption[] {
-    const today = new Date();
-    const monthStart = this.startOfDay(new Date(today.getFullYear(), today.getMonth(), 1));
-    const monthEnd = this.endOfDay(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+    const anchor = this.dateFrom() ?? new Date();
+    const monthStart = this.startOfDay(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
+    const monthEnd = this.endOfDay(new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0));
     const firstWeekStart = this.startOfWeek(monthStart);
     const weeks: WeekOption[] = [];
     let cursor = firstWeekStart;
@@ -1162,7 +1176,10 @@ export class DashboardComponent implements OnInit {
   }
 
   private currentWeekIndexInMonth(): number {
-    const todayKey = this.localDateKey(new Date());
+    const target = this.dateFrom() && this.dateTo() && this.isCurrentMonthRange()
+      ? new Date()
+      : this.dateFrom() ?? new Date();
+    const todayKey = this.localDateKey(target);
     const index = this.buildCurrentMonthWeeks().findIndex((week) => {
       const startKey = this.localDateKey(week.start);
       const endKey = this.localDateKey(week.end);
@@ -1174,6 +1191,28 @@ export class DashboardComponent implements OnInit {
 
   private startOfCurrentWeek(): Date {
     return this.startOfWeek(new Date());
+  }
+
+  private currentMonthStart(): Date {
+    const today = new Date();
+    return this.startOfDay(new Date(today.getFullYear(), today.getMonth(), 1));
+  }
+
+  private currentMonthEnd(): Date {
+    const today = new Date();
+    return this.endOfDay(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+  }
+
+  private isCurrentMonthRange(): boolean {
+    const from = this.dateFrom();
+    const to = this.dateTo();
+
+    if (!from || !to) {
+      return false;
+    }
+
+    return this.localDateKey(from) === this.localDateKey(this.currentMonthStart())
+      && this.localDateKey(to) === this.localDateKey(this.currentMonthEnd());
   }
 
   private startOfWeek(date: Date): Date {

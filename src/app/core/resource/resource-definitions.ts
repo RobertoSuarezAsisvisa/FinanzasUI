@@ -9,7 +9,7 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
     path: 'accounts',
     fields: [
       { key: 'name', label: 'Nombre', type: 'text', required: true, table: true },
-      { key: 'accountType', label: 'Tipo', type: 'select', required: true, options: ['Bank', 'Cash', 'DigitalWallet', 'Crypto'], table: true },
+      { key: 'accountType', label: 'Tipo', type: 'select', required: true, options: ['Bank', 'Cash', 'DigitalWallet', 'Crypto', 'CreditCard'], table: true },
       { key: 'purpose', label: 'Uso', type: 'select', required: true, options: ['Spending', 'Savings', 'Investment', 'Reserved'], table: true, defaultValue: 'Spending' },
       { key: 'currency', label: 'Moneda', type: 'select', required: true, options: ['USD', 'EUR', 'BTC', 'ETH'], table: true, defaultValue: 'USD' },
       { key: 'balance', label: 'Balance', type: 'currency', table: true },
@@ -32,6 +32,48 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
       },
       { key: 'cryptoQuantity', label: 'Cantidad cripto', type: 'number', visibleWhen: { key: 'accountType', value: 'Crypto' } },
       { key: 'cryptoAvgBuyPriceUsd', label: 'Precio promedio USD', type: 'currency', visibleWhen: { key: 'accountType', value: 'Crypto' } },
+      { key: 'creditCardIssuer', label: 'Emisor', type: 'text', visibleWhen: { key: 'accountType', value: 'CreditCard' }, defaultValue: 'Banco Diners Club del Ecuador' },
+      { key: 'creditCardBrand', label: 'Marca', type: 'select', options: ['DinersClub', 'Discover', 'Visa', 'Mastercard', 'Other'], visibleWhen: { key: 'accountType', value: 'CreditCard' }, defaultValue: 'Discover' },
+      { key: 'creditCardProductName', label: 'Producto', type: 'text', visibleWhen: { key: 'accountType', value: 'CreditCard' } },
+      { key: 'creditCardLastFour', label: 'Ultimos 4', type: 'text', visibleWhen: { key: 'accountType', value: 'CreditCard' } },
+      { key: 'creditLimit', label: 'Cupo', type: 'currency', visibleWhen: { key: 'accountType', value: 'CreditCard' }, defaultValue: 500 },
+      { key: 'outstandingBalance', label: 'Saldo usado', type: 'currency', readonly: true, table: true },
+      { key: 'availableCredit', label: 'Disponible tarjeta', type: 'currency', readonly: true, table: true },
+      { key: 'statementClosingDay', label: 'Dia de corte', type: 'number', visibleWhen: { key: 'accountType', value: 'CreditCard' }, defaultValue: 1 },
+      { key: 'paymentDueDay', label: 'Dia de pago', type: 'number', visibleWhen: { key: 'accountType', value: 'CreditCard' }, defaultValue: 15 },
+      { key: 'paymentMode', label: 'Modo de pago', type: 'select', options: ['Manual', 'AutomaticMinimum', 'AutomaticTotal'], visibleWhen: { key: 'accountType', value: 'CreditCard' }, defaultValue: 'Manual' },
+      { key: 'rewardsProgram', label: 'Recompensas', type: 'text', visibleWhen: { key: 'accountType', value: 'CreditCard' }, defaultValue: 'Miles' },
+      { key: 'statementDelivery', label: 'Estado de cuenta', type: 'select', options: ['Virtual', 'Physical', 'Both'], visibleWhen: { key: 'accountType', value: 'CreditCard' }, defaultValue: 'Virtual' },
+      { key: 'interestNominalAnnual', label: 'Tasa nominal anual (%)', type: 'number', visibleWhen: { key: 'accountType', value: 'CreditCard' }, defaultValue: 15.6 },
+      { key: 'interestEffectiveAnnual', label: 'Tasa efectiva anual (%)', type: 'number', visibleWhen: { key: 'accountType', value: 'CreditCard' }, defaultValue: 16.77 },
+      { key: 'isActive', label: 'Activa', type: 'boolean', table: true }
+    ]
+  },
+  creditCards: {
+    key: 'creditCards',
+    title: 'Tarjetas de Credito',
+    subtitle: 'Cupos, saldos usados, fechas de pago y cortes mensuales.',
+    icon: 'pi pi-credit-card',
+    path: 'credit-cards',
+    fields: [
+      { key: 'accountName', label: 'Cuenta', type: 'text', readonly: true, table: true },
+      { key: 'name', label: 'Nombre', type: 'text', required: true, defaultValue: 'Tarjeta Diners' },
+      { key: 'issuer', label: 'Emisor', type: 'text', required: true, table: true, defaultValue: 'Banco Diners Club del Ecuador' },
+      { key: 'brand', label: 'Marca', type: 'select', required: true, options: ['DinersClub', 'Discover', 'Visa', 'Mastercard', 'Other'], table: true, defaultValue: 'Discover' },
+      { key: 'productName', label: 'Producto', type: 'text', table: true },
+      { key: 'lastFour', label: 'Ultimos 4', type: 'text', table: true },
+      { key: 'currency', label: 'Moneda', type: 'select', required: true, options: ['USD', 'EUR'], table: true, defaultValue: 'USD' },
+      { key: 'creditLimit', label: 'Cupo', type: 'currency', required: true, table: true, defaultValue: 500 },
+      { key: 'outstandingBalance', label: 'Usado', type: 'currency', readonly: true, table: true },
+      { key: 'availableCredit', label: 'Disponible', type: 'currency', readonly: true, table: true },
+      { key: 'statementClosingDay', label: 'Dia de corte', type: 'number', required: true, table: true, defaultValue: 1 },
+      { key: 'paymentDueDay', label: 'Dia de pago', type: 'number', required: true, table: true, defaultValue: 15 },
+      { key: 'paymentMode', label: 'Modo de pago', type: 'select', options: ['Manual', 'AutomaticMinimum', 'AutomaticTotal'], defaultValue: 'Manual' },
+      { key: 'rewardsProgram', label: 'Recompensas', type: 'text', defaultValue: 'Miles' },
+      { key: 'statementDelivery', label: 'Estado de cuenta', type: 'select', options: ['Virtual', 'Physical', 'Both'], defaultValue: 'Virtual' },
+      { key: 'interestNominalAnnual', label: 'Tasa nominal anual (%)', type: 'number', defaultValue: 15.6 },
+      { key: 'interestEffectiveAnnual', label: 'Tasa efectiva anual (%)', type: 'number', defaultValue: 16.77 },
+      { key: 'nextDueDate', label: 'Proximo pago', type: 'date', readonly: true, table: true },
       { key: 'isActive', label: 'Activa', type: 'boolean', table: true }
     ]
   },
@@ -55,7 +97,12 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
       { key: 'reference', label: 'Referencia', type: 'text', readonly: true },
       { key: 'transactionDate', label: 'Fecha', type: 'date', required: true, table: true, showTime: true, defaultNow: true },
       { key: 'recurringRuleId', label: 'Regla recurrente', type: 'text', readonly: true },
-      { key: 'tagIds', label: 'Tags', type: 'multiselect' }
+      { key: 'tagIds', label: 'Tags', type: 'multiselect' },
+      { key: 'creditCardOperationType', label: 'Operacion tarjeta', type: 'select', options: ['Purchase', 'Payment', 'Refund', 'Fee', 'Interest', 'CashAdvance'] },
+      { key: 'isForeignCreditCardTransaction', label: 'Consumo exterior', type: 'boolean', defaultValue: false },
+      { key: 'installmentCount', label: 'Cuotas', type: 'number' },
+      { key: 'merchant', label: 'Comercio', type: 'text' },
+      { key: 'creditCardStatementId', label: 'Estado tarjeta', type: 'text', readonly: true }
     ]
   },
   budgets: {
@@ -70,8 +117,8 @@ export const RESOURCE_DEFINITIONS: Record<string, ResourceDefinition> = {
       { key: 'usedAmount', label: 'Usado', type: 'currency', readonly: true, table: true },
       { key: 'remainingAmount', label: 'Disponible', type: 'currency', readonly: true, table: true },
       { key: 'usage', label: 'Uso', type: 'text', readonly: true, table: true },
-      { key: 'periodType', label: 'Periodo', type: 'select', required: true, options: ['Monthly', 'Quarterly', 'Yearly'], table: true },
-      { key: 'validityType', label: 'Vigencia', type: 'select', required: true, options: ['Indefinite', 'Fixed'], table: true },
+      { key: 'periodType', label: 'Periodo', type: 'select', required: true, options: ['Daily', 'Weekly', 'Monthly', 'Yearly'], table: true },
+      { key: 'validityType', label: 'Vigencia', type: 'select', required: true, options: ['Indefinite', 'FixedPeriod'], table: true },
       { key: 'periodStart', label: 'Inicio', type: 'date' },
       { key: 'periodEnd', label: 'Fin', type: 'date' },
       { key: 'isActive', label: 'Activo', type: 'boolean', table: true }
